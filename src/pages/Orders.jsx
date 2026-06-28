@@ -158,47 +158,58 @@ export default function Orders() {
           </div>
         </div>
         {!profile && (
-          <div className="hero-cta">
-            <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
-          </div>
+          <>
+            {global.active > 0 && (
+              <div className="hero-alert">
+                <span className="hero-alert-pulse" aria-hidden="true" />
+                Hay <strong>&nbsp;{global.active}&nbsp;</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo
+              </div>
+            )}
+            <div className="hero-cta">
+              <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
+            </div>
+          </>
         )}
       </div>
 
-      <div className="section-header">
-        <div>
-          <div className="section-title">{title}</div>
-          {isProvider && profile.lat == null && (
-            <div className="muted">Agrega tus coordenadas en tu perfil para ordenar por cercanía.</div>
+      {profile && (
+        <>
+          <div className="section-header">
+            <div>
+              <div className="section-title">{title}</div>
+              {isProvider && profile.lat == null && (
+                <div className="muted">Agrega tus coordenadas en tu perfil para ordenar por cercanía.</div>
+              )}
+            </div>
+            {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
+          </div>
+
+          <div className="stats-row">
+            <div className="stat-card"><div className="stat-num" style={{ color: 'var(--warning)' }}>{stats.pending}</div><div className="stat-label">Pendientes</div></div>
+            <div className="stat-card"><div className="stat-num" style={{ color: 'var(--accent)' }}>{stats.progress}</div><div className="stat-label">En progreso</div></div>
+            <div className="stat-card"><div className="stat-num" style={{ color: 'var(--success)' }}>{stats.done}</div><div className="stat-label">Entregados</div></div>
+          </div>
+
+          <div className="filter-row">
+            {filters.map(([f, label]) => (
+              <button key={f} className={`btn sm ${filter === f ? 'accent' : ''}`} onClick={() => setFilter(f)}>{label}</button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="loading">Cargando pedidos…</div>
+          ) : list.length === 0 ? (
+            <div className="empty-state">
+              <span className="icon">📋</span>
+              <p>{isShelter ? 'Aún no tienes pedidos. Crea uno nuevo.' : 'No hay pedidos que mostrar.'}</p>
+            </div>
+          ) : (
+            list.map(o => (
+              <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
+                onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
+            ))
           )}
-          {!profile && <div className="muted">Inicia sesión para tomar o publicar pedidos.</div>}
-        </div>
-        {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
-      </div>
-
-      <div className="stats-row">
-        <div className="stat-card"><div className="stat-num" style={{ color: 'var(--warning)' }}>{stats.pending}</div><div className="stat-label">Pendientes</div></div>
-        <div className="stat-card"><div className="stat-num" style={{ color: 'var(--accent)' }}>{stats.progress}</div><div className="stat-label">En progreso</div></div>
-        <div className="stat-card"><div className="stat-num" style={{ color: 'var(--success)' }}>{stats.done}</div><div className="stat-label">Entregados</div></div>
-      </div>
-
-      <div className="filter-row">
-        {filters.map(([f, label]) => (
-          <button key={f} className={`btn sm ${filter === f ? 'accent' : ''}`} onClick={() => setFilter(f)}>{label}</button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="loading">Cargando pedidos…</div>
-      ) : list.length === 0 ? (
-        <div className="empty-state">
-          <span className="icon">📋</span>
-          <p>{isShelter ? 'Aún no tienes pedidos. Crea uno nuevo.' : 'No hay pedidos que mostrar.'}</p>
-        </div>
-      ) : (
-        list.map(o => (
-          <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
-            onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
-        ))
+        </>
       )}
     </div>
   )

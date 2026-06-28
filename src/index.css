@@ -266,3 +266,21 @@ table.data tr:last-child td { border-bottom: none; }
 .hero-num { font-size: 24px; font-weight: 700; color: var(--red); line-height: 1; }
 .hero-label { font-size: 11.5px; color: var(--text-secondary); margin-top: 5px; }
 .hero-cta { margin-top: 24px; }
+
+/* Banner de alerta de pedidos pendientes en el hero */
+.hero-alert {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 4px auto 0; padding: 9px 18px; background: var(--warning-bg);
+  color: var(--warning); border-radius: 24px; font-size: 14px; font-weight: 500;
+}
+.hero-alert strong { font-weight: 700; }
+.hero-alert-pulse {
+  width: 9px; height: 9px; border-radius: 50%; background: #d8821a;
+  margin-right: 9px; flex-shrink: 0; animation: pulse 1.6s ease-out infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(216, 130, 26, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(216, 130, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(216, 130, 26, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-alert-pulse { animation: none; } }
