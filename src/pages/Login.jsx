@@ -44,8 +44,8 @@ export default function Login() {
   async function doRegister() {
     if (!reg.name || !reg.email || !reg.password) { toast('Completa los campos obligatorios.', 'error'); return }
     if (reg.password.length < 6) { toast('La contraseña debe tener al menos 6 caracteres.', 'error'); return }
-    if (regRole === 'shelter' && (!reg.location || !reg.phone || !reg.contact)) {
-      toast('Completa ubicación, teléfono y persona de contacto.', 'error'); return
+    if (regRole === 'shelter' && (!reg.location || !reg.phone || !reg.contact || !reg.contact_recv)) {
+      toast('Completa dirección, teléfono, persona de contacto y persona que recibe.', 'error'); return
     }
     if (regRole === 'provider' && !reg.address) { toast('Ingresa la dirección.', 'error'); return }
     if (!reg.estado) { toast('Selecciona tu estado.', 'error'); return }
@@ -186,7 +186,7 @@ export default function Login() {
                     <input value={reg.phone} onChange={e => setR('phone', e.target.value)} placeholder="+58 212 ..." /></div>
                   <div className="field"><label>Persona de contacto <span className="req">*</span></label>
                     <input value={reg.contact} onChange={e => setR('contact', e.target.value)} placeholder="Responsable" /></div>
-                  <div className="field"><label>Persona que recibe</label>
+                  <div className="field"><label>Persona que recibe <span className="req">*</span></label>
                     <input value={reg.contact_recv} onChange={e => setR('contact_recv', e.target.value)} placeholder="Quien recibe" /></div>
                 </>
               ) : (

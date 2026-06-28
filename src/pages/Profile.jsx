@@ -61,6 +61,13 @@ export default function Profile() {
   }, [isProvider])
 
   async function save() {
+    // Campos obligatorios para refugios
+    if (isShelter) {
+      if (!form.location?.trim() || !form.phone?.trim() || !form.contact?.trim() || !form.contact_recv?.trim()) {
+        toast('Completa dirección, teléfono, persona de contacto y persona que recibe.', 'error')
+        return
+      }
+    }
     setSaving(true)
     const { lat, lng } = parseCoords(form.coords)
     let error
@@ -98,15 +105,15 @@ export default function Profile() {
                 {PROVIDER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select></div>
           )}
-          <div className="field"><label>Teléfono</label>
+          <div className="field"><label>Teléfono{isShelter && <span className="req"> *</span>}</label>
             <input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
-          <div className="field"><label>Persona de contacto</label>
+          <div className="field"><label>Persona de contacto{isShelter && <span className="req"> *</span>}</label>
             <input value={form.contact} onChange={e => set('contact', e.target.value)} /></div>
           {isShelter && (
             <>
-              <div className="field"><label>Persona que recibe</label>
+              <div className="field"><label>Persona que recibe <span className="req">*</span></label>
                 <input value={form.contact_recv} onChange={e => set('contact_recv', e.target.value)} /></div>
-              <div className="field full"><label>Ubicación / dirección</label>
+              <div className="field full"><label>Ubicación / dirección <span className="req">*</span></label>
                 <input value={form.location} onChange={e => set('location', e.target.value)} /></div>
             </>
           )}
