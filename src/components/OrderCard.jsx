@@ -93,7 +93,9 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
             <div><span className="label">Contacto:</span>{shelter?.contact || '—'}</div>
             <div><span className="label">Teléfono:</span>{shelter?.phone || '—'}</div>
             {shelter?.location && <div><span className="label">Ubicación:</span>{shelter.location}</div>}
+            {shelter?.estado && <div><span className="label">Estado:</span>{shelter.estado}</div>}
             {shelter?.instagram && <div><span className="label">Instagram:</span>{shelter.instagram}</div>}
+            {!isInsumos && order.allergies && <div style={{ gridColumn: '1 / -1' }}><span className="label" style={{ color: 'var(--danger)' }}>⚠️ Alergias:</span>{order.allergies}</div>}
             {order.notes && <div style={{ gridColumn: '1 / -1' }}><span className="label">Notas:</span>{order.notes}</div>}
             {mapsUrl && <div style={{ gridColumn: '1 / -1' }}><a href={mapsUrl} target="_blank" rel="noreferrer">📍 Ver en mapa</a></div>}
           </div>

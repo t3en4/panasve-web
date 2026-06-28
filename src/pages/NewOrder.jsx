@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { REGLAS_ORO, REGLAS_ORO_NOTA } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 
@@ -19,7 +20,7 @@ export default function NewOrder() {
   const [items, setItems] = useState([{ name: '', qty: '' }])
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    people: '', date: new Date().toISOString().split('T')[0], notes: '',
+    people: '', date: new Date().toISOString().split('T')[0], notes: '', allergies: '',
   })
 
   // Cargar el pedido si estamos editando
@@ -31,7 +32,7 @@ export default function NewOrder() {
       setType(data.order_type || 'comida')
       setMeals(data.meals || [])
       setItems(data.items?.length ? data.items.map(i => ({ name: i.name, qty: String(i.qty) })) : [{ name: '', qty: '' }])
-      setForm({ people: data.people || '', date: data.order_date, notes: data.notes || '' })
+      setForm({ people: data.people || '', date: data.order_date, notes: data.notes || '', allergies: data.allergies || '' })
     })
   }, [editing, id])
 
@@ -87,9 +88,11 @@ export default function NewOrder() {
       payload.people = parseInt(form.people)
       payload.meals = meals
       payload.items = null
+      payload.allergies = form.allergies || null
     } else {
       payload.people = null
       payload.meals = null
+      payload.allergies = null
       payload.items = items
         .filter(i => i.name.trim() && parseFloat(i.qty) > 0)
         .map(i => ({ name: i.name.trim(), qty: parseFloat(i.qty) }))
@@ -153,6 +156,20 @@ export default function NewOrder() {
                   <button key={m} type="button" className={`meal-chip ${meals.includes(m) ? 'selected' : ''}`} onClick={() => toggleMeal(m)}>{m}</button>
                 ))}
               </div></div>
+            <div className="field full"><label>Alergias / restricciones alimentarias</label>
+              <textarea value={form.allergies} onChange={e => set('allergies', e.target.value)}
+                placeholder="Ej: sin maní, sin gluten, intolerancia a lactosa, vegetarianos..." style={{ minHeight: 60 }} /></div>
+          </div>
+
+          {/* Reglas de oro de manejo seguro de alimentos */}
+          <div className="reglas-box">
+            <div className="reglas-title">⚠️ Reglas de oro para alimentos</div>
+            <ul className="reglas-list">
+              {REGLAS_ORO.map((r, i) => (
+                <li key={i}><strong>{r.titulo}:</strong> {r.texto}</li>
+              ))}
+            </ul>
+            <div className="reglas-nota">{REGLAS_ORO_NOTA}</div>
           </div>
         </div>
       ) : (

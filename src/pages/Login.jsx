@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, parseCoords, traducirError } from '../lib/supabase'
+import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
 import { useToast } from '../components/Toast'
 
 export default function Login() {
@@ -13,7 +14,7 @@ export default function Login() {
   const [login, setLogin] = useState({ email: '', password: '' })
   const [reg, setReg] = useState({
     name: '', email: '', password: '', phone: '', contact: '', instagram: '',
-    address: '', coords: '', location: '', contact_recv: '',
+    address: '', coords: '', location: '', contact_recv: '', estado: '', provider_type: 'restaurante',
   })
 
   function setR(k, v) { setReg(r => ({ ...r, [k]: v })) }
@@ -47,6 +48,7 @@ export default function Login() {
       toast('Completa ubicación, teléfono y persona de contacto.', 'error'); return
     }
     if (regRole === 'provider' && !reg.address) { toast('Ingresa la dirección.', 'error'); return }
+    if (!reg.estado) { toast('Selecciona tu estado.', 'error'); return }
 
     setBusy(true)
     const { data, error } = await supabase.auth.signUp({
@@ -63,13 +65,14 @@ export default function Login() {
         await supabase.from('shelters').insert({
           owner_id: data.user.id, name: reg.name, location: reg.location, phone: reg.phone,
           email: reg.email, contact: reg.contact, contact_recv: reg.contact_recv,
-          instagram: reg.instagram, lat, lng,
+          instagram: reg.instagram, estado: reg.estado, lat, lng,
         })
       } else {
         // Completa el perfil del proveedor
         await supabase.from('profiles').update({
           name: reg.name, phone: reg.phone, contact: reg.contact,
-          instagram: reg.instagram, address: reg.address, lat, lng,
+          instagram: reg.instagram, address: reg.address, estado: reg.estado,
+          provider_type: reg.provider_type, lat, lng,
         }).eq('id', data.user.id)
       }
     }
@@ -91,7 +94,7 @@ export default function Login() {
           <div className="card">
             <div style={{ marginBottom: 16 }}>
               <div className="card-title">Iniciar sesión</div>
-              <div className="card-sub">Para refugios, restaurantes y chefs.</div>
+              <div className="card-sub">Para refugios y proveedores.</div>
             </div>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Email</label>
@@ -146,10 +149,10 @@ export default function Login() {
               </span>
             </button>
             <button className="role-option" onClick={() => { setRegRole('provider'); setMode('register') }}>
-              <span className="role-emoji">👨‍🍳</span>
+              <span className="role-emoji">🤝</span>
               <span>
-                <strong>Soy restaurante / chef / proveedor</strong>
-                <span className="role-desc">Toma pedidos cercanos y ayúdalos a cumplirse.</span>
+                <strong>Soy proveedor / quiero ayudar</strong>
+                <span className="role-desc">Restaurante, chef, farmacia, individuo u otro. Toma pedidos cercanos.</span>
               </span>
             </button>
             <button className="btn" style={{ width: '100%', marginTop: 12 }} onClick={() => setMode('login')}>Volver</button>
@@ -159,11 +162,17 @@ export default function Login() {
         {mode === 'register' && (
           <div className="card">
             <div className="card-title" style={{ marginBottom: 16 }}>
-              {regRole === 'shelter' ? 'Registrar refugio' : 'Registrar restaurante / chef'}
+              {regRole === 'shelter' ? 'Registrar refugio' : 'Registrar proveedor'}
             </div>
             <div className="form-grid">
-              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre del refugio' : 'Nombre / Restaurante'} <span className="req">*</span></label>
-                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José' : 'Mi Restaurante'} /></div>
+              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre del refugio' : 'Nombre / Negocio'} <span className="req">*</span></label>
+                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José' : 'Ej: Mi Restaurante'} /></div>
+              {regRole === 'provider' && (
+                <div className="field"><label>Tipo de proveedor <span className="req">*</span></label>
+                  <select value={reg.provider_type} onChange={e => setR('provider_type', e.target.value)}>
+                    {PROVIDER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select></div>
+              )}
               <div className="field"><label>Email <span className="req">*</span></label>
                 <input type="email" value={reg.email} onChange={e => setR('email', e.target.value)} placeholder="tu@email.com" /></div>
               <div className="field"><label>Contraseña <span className="req">*</span></label>
@@ -191,6 +200,11 @@ export default function Login() {
                 </>
               )}
 
+              <div className="field"><label>Estado <span className="req">*</span></label>
+                <select value={reg.estado} onChange={e => setR('estado', e.target.value)}>
+                  <option value="">Selecciona…</option>
+                  {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                </select></div>
               <div className="field"><label>Instagram</label>
                 <input value={reg.instagram} onChange={e => setR('instagram', e.target.value)} placeholder="@perfil" /></div>
               <div className="field full"><label>Ubicación en Google Maps</label>

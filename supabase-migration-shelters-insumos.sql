@@ -83,13 +83,20 @@ create policy "pedidos - crear" on public.orders
 drop policy if exists "pedidos - proveedor o admin actualiza" on public.orders;
 drop policy if exists "pedidos - actualizar" on public.orders;
 create policy "pedidos - actualizar" on public.orders
-  for update using (
+  for update
+  using (
     public.is_admin()
     or claimed_by = auth.uid()                                              -- proveedor que lo tomó
     or (status = 'pending' and exists (                                     -- proveedor toma uno libre
           select 1 from public.profiles p where p.id = auth.uid() and p.role = 'provider'))
     or (status = 'pending' and exists (                                     -- refugio dueño edita/cancela
           select 1 from public.shelters s where s.id = shelter_id and s.owner_id = auth.uid()))
+  )
+  with check (
+    public.is_admin()
+    or claimed_by = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'provider')
+    or exists (select 1 from public.shelters s where s.id = shelter_id and s.owner_id = auth.uid())
   );
 
 -- 7. Historial: incluir el evento de cancelación
@@ -112,7 +119,8 @@ begin
 end; $$;
 
 -- 8. Refrescar la vista de admin para incluir los campos nuevos
-create or replace view public.orders_full as
+drop view if exists public.orders_full;
+create view public.orders_full as
   select o.*,
          s.name  as shelter_name, s.location as shelter_location,
          s.phone as shelter_phone, s.email as shelter_email,

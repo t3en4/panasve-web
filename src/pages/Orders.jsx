@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, distanceKm } from '../lib/supabase'
+import { ESTADOS } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
@@ -13,6 +14,7 @@ export default function Orders() {
   const [shelters, setShelters] = useState({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [estadoFilter, setEstadoFilter] = useState('all')
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -104,6 +106,10 @@ export default function Orders() {
     list = list.filter(o => o.status === 'pending')
   }
   if (filter !== 'all') list = list.filter(o => o.status === filter)
+  // Filtro por estado (según el estado del refugio del pedido)
+  if (estadoFilter !== 'all') {
+    list = list.filter(o => shelters[o.shelter_id]?.estado === estadoFilter)
+  }
 
   const base = isShelter && myShelter ? orders.filter(o => o.shelter_id === myShelter.id) : orders
   const stats = {
@@ -192,6 +198,12 @@ export default function Orders() {
             {filters.map(([f, label]) => (
               <button key={f} className={`btn sm ${filter === f ? 'accent' : ''}`} onClick={() => setFilter(f)}>{label}</button>
             ))}
+            {!isShelter && (
+              <select className="estado-filter" value={estadoFilter} onChange={e => setEstadoFilter(e.target.value)}>
+                <option value="all">Todos los estados</option>
+                {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            )}
           </div>
 
           {loading ? (
