@@ -178,6 +178,26 @@ export default function Orders() {
     }))
   }
 
+  // Marcadores para el mapa del home (visitantes): todos los pedidos, color por estado
+  // Terracota = pendiente, ámbar = en progreso, verde = entregado
+  const STATUS_COLOR = { pending: '#c2703d', progress: '#d9a213', done: '#3c6e54' }
+  const STATUS_TXT = { pending: 'Pendiente', progress: 'En progreso', done: 'Entregado' }
+  const homeMarkers = orders
+    .filter(o => ['pending', 'progress', 'done'].includes(o.status))
+    .map(o => {
+      const s = shelters[o.shelter_id]
+      const lat = o.lat != null ? o.lat : s?.lat
+      const lng = o.lng != null ? o.lng : s?.lng
+      if (lat == null) return null
+      const resumen = o.order_type === 'insumos'
+        ? `${(o.items || []).length} insumos` : `${o.people || ''} personas`
+      return {
+        lat, lng, color: STATUS_COLOR[o.status],
+        title: s?.name || 'Pedido',
+        subtitle: `${STATUS_TXT[o.status]} · ${resumen}`,
+      }
+    }).filter(Boolean)
+
   return (
     <div className="content">
       {/* Hero solo para visitantes no autenticados */}
@@ -216,6 +236,21 @@ export default function Orders() {
         </div>
         <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="hero-ig">Síguenos en Instagram · @panasve</a>
       </div>
+      )}
+
+      {/* Mapa de pedidos para visitantes */}
+      {!profile && homeMarkers.length > 0 && (
+        <div className="home-map-card">
+          <div className="home-map-head">
+            <h2 className="home-map-title">Pedidos en el mapa</h2>
+            <div className="home-map-legend">
+              <span><i style={{ background: '#c2703d' }} /> Pendiente</span>
+              <span><i style={{ background: '#d9a213' }} /> En progreso</span>
+              <span><i style={{ background: '#3c6e54' }} /> Entregado</span>
+            </div>
+          </div>
+          <OrdersMap markers={homeMarkers} showSelf={false} />
+        </div>
       )}
 
       {profile && (

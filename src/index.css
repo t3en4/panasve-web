@@ -515,3 +515,11 @@ table.data tr:last-child td { border-bottom: none; }
 /* Logo grande en el hero */
 .hero-logo { width: 116px; height: 116px; border-radius: 50%; margin: 0 auto 20px; display: block; box-shadow: 0 8px 24px rgba(31, 61, 47, 0.18); }
 @media (max-width: 600px) { .hero-logo { width: 88px; height: 88px; } }
+
+/* Mapa de pedidos en el home (visitantes) */
+.home-map-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; box-shadow: var(--shadow); }
+.home-map-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.home-map-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--accent-deep); }
+.home-map-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+.home-map-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+.home-map-legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }

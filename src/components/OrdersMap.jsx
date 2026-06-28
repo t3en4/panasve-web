@@ -18,51 +18,68 @@ function loadMaps() {
   return mapsPromise
 }
 
-export default function OrdersMap({ center, markers, markerColor }) {
+export default function OrdersMap({ center, markers, markerColor, showSelf = true }) {
   const ref = useRef(null)
   const [error, setError] = useState(null)
 
+  // Centro por defecto: Venezuela (si no se pasa uno, ej. en el home)
+  const VE_CENTER = { lat: 8.0, lng: -66.0 }
+  const mapCenter = center?.lat != null ? center : VE_CENTER
+
   useEffect(() => {
     if (!KEY) { setError('falta_key'); return }
-    if (center?.lat == null) { setError('sin_ubicacion'); return }
 
     let map
     loadMaps().then(maps => {
       map = new maps.Map(ref.current, {
-        center: { lat: center.lat, lng: center.lng },
-        zoom: 12,
+        center: { lat: mapCenter.lat, lng: mapCenter.lng },
+        zoom: center?.lat != null ? 12 : 6,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
       })
 
-      // Marcador del proveedor (su ubicación)
-      new maps.Marker({
-        position: { lat: center.lat, lng: center.lng },
-        map,
-        title: 'Tu ubicación',
-        icon: {
-          path: maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#185fa5',
-          fillOpacity: 1,
-          strokeColor: '#fff',
-          strokeWeight: 2,
-        },
-      })
+      // Marcador de "tu ubicación" (solo si hay center y showSelf)
+      if (showSelf && center?.lat != null) {
+        new maps.Marker({
+          position: { lat: center.lat, lng: center.lng },
+          map,
+          title: 'Tu ubicación',
+          icon: {
+            path: maps.SymbolPath.CIRCLE,
+            scale: 9,
+            fillColor: '#185fa5',
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          },
+        })
+      }
 
       const info = new maps.InfoWindow()
       const bounds = new maps.LatLngBounds()
-      bounds.extend({ lat: center.lat, lng: center.lng })
+      if (center?.lat != null) bounds.extend({ lat: center.lat, lng: center.lng })
 
       // Marcadores de pedidos cercanos
       ;(markers || []).forEach(m => {
         if (m.lat == null) return
-        const marker = new maps.Marker({
+        const markerOpts = {
           position: { lat: m.lat, lng: m.lng },
           map,
           title: m.title,
-        })
+        }
+        // Color personalizado por marcador (para estados de pedido)
+        if (m.color) {
+          markerOpts.icon = {
+            path: maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: m.color,
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          }
+        }
+        const marker = new maps.Marker(markerOpts)
         marker.addListener('click', () => {
           info.setContent(
             `<div style="font-family:sans-serif;font-size:13px;max-width:200px">
@@ -82,7 +99,7 @@ export default function OrdersMap({ center, markers, markerColor }) {
         })
       }
     }).catch(() => setError('carga'))
-  }, [center, markers])
+  }, [center, markers, showSelf])
 
   if (error === 'falta_key') {
     return <div className="map-msg">El mapa no está configurado todavía.</div>
