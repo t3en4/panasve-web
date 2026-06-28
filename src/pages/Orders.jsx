@@ -37,37 +37,56 @@ export default function Orders() {
     return () => supabase.removeChannel(channel)
   }, [load])
 
+  // Aplica un cambio local al instante; si el servidor falla, revierte.
+  function patchLocal(orderId, changes) {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...changes } : o))
+  }
+
   async function claim(order) {
+    const now = new Date().toISOString()
+    const prev = orders
+    // Cambio inmediato en pantalla
+    patchLocal(order.id, { status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
     setBusy(true)
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'progress', claimed_by: profile.id, progress_at: new Date().toISOString() })
+      .update({ status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
       .eq('id', order.id)
       .eq('status', 'pending') // evita choque si otro lo tomó primero
     setBusy(false)
-    if (error) { toast('No se pudo tomar el pedido. Quizá ya fue tomado.', 'error'); load(); return }
+    if (error) {
+      setOrders(prev) // revierte
+      toast('No se pudo tomar el pedido. Quizá ya fue tomado.', 'error')
+      load()
+      return
+    }
     toast('Pedido tomado. ¡Gracias por ayudar, pana!')
   }
 
   async function deliver(order) {
+    const now = new Date().toISOString()
+    const prev = orders
+    patchLocal(order.id, { status: 'done', done_at: now })
     setBusy(true)
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'done', done_at: new Date().toISOString() })
+      .update({ status: 'done', done_at: now })
       .eq('id', order.id)
     setBusy(false)
-    if (error) { toast('No se pudo actualizar.', 'error'); return }
+    if (error) { setOrders(prev); toast('No se pudo actualizar.', 'error'); return }
     toast('Pedido marcado como entregado. ¡Excelente trabajo!')
   }
 
   async function release(order) {
+    const prev = orders
+    patchLocal(order.id, { status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null })
     setBusy(true)
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'pending', claimed_by: null, progress_at: null })
+      .update({ status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null })
       .eq('id', order.id)
     setBusy(false)
-    if (error) { toast('No se pudo liberar.', 'error'); return }
+    if (error) { setOrders(prev); toast('No se pudo liberar.', 'error'); return }
     toast('Pedido liberado y disponible nuevamente.')
   }
 

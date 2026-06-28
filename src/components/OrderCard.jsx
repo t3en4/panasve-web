@@ -1,4 +1,5 @@
-import { fmtDate, distanceKm } from '../lib/supabase'
+import { useState } from 'react'
+import { supabase, fmtDate, distanceKm } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 const STATUS = {
@@ -11,6 +12,25 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
   const { profile } = useAuth()
   const st = STATUS[order.status] || STATUS.pending
   const mine = profile && order.claimed_by === profile.id
+
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState(null)
+  const [loadingHist, setLoadingHist] = useState(false)
+
+  async function toggleHistory() {
+    const next = !showHistory
+    setShowHistory(next)
+    if (next && history === null) {
+      setLoadingHist(true)
+      const { data } = await supabase
+        .from('order_history')
+        .select('*')
+        .eq('order_id', order.id)
+        .order('created_at', { ascending: true })
+      setHistory(data || [])
+      setLoadingHist(false)
+    }
+  }
 
   let dist = null
   if (profile?.lat != null && shelter?.lat != null) {
@@ -31,6 +51,14 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
         {dist && <span className="dist-pill">{dist} km</span>}
       </div>
 
+      {order.status !== 'pending' && order.claimed_by_name && (
+        <div className="assignee">
+          <span className="assignee-dot" />
+          Asignado a <strong>&nbsp;{order.claimed_by_name}</strong>
+          {mine && <span className="you-tag">tú</span>}
+        </div>
+      )}
+
       <div className="order-info">
         <div><span className="label">Personas:</span>{order.people}</div>
         <div><span className="label">Comidas:</span>{(order.meals || []).join(', ')}</div>
@@ -41,11 +69,32 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
         {order.notes && <div style={{ gridColumn: '1 / -1' }}><span className="label">Notas:</span>{order.notes}</div>}
       </div>
 
-      <div className="timestamp">
-        Pedido: {fmtDate(order.created_at)}
-        {order.progress_at && ` · Tomado: ${fmtDate(order.progress_at)}`}
-        {order.done_at && ` · Entregado: ${fmtDate(order.done_at)}`}
-      </div>
+      <div className="timestamp">Pedido: {fmtDate(order.created_at)}</div>
+
+      <button className="history-toggle" onClick={toggleHistory}>
+        {showHistory ? '▾' : '▸'} Historial del pedido
+      </button>
+      {showHistory && (
+        <div className="history-box">
+          {loadingHist ? (
+            <div className="muted" style={{ fontSize: 13 }}>Cargando…</div>
+          ) : !history || history.length === 0 ? (
+            <div className="muted" style={{ fontSize: 13 }}>Sin eventos registrados todavía.</div>
+          ) : (
+            <ul className="history-list">
+              {history.map(h => (
+                <li key={h.id}>
+                  <span className={`history-dot ${STATUS[h.status]?.cls || ''}`} />
+                  <div>
+                    <div className="history-note">{h.note}</div>
+                    <div className="history-time">{fmtDate(h.created_at)}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {profile && (order.status === 'pending' || (order.status === 'progress' && mine)) && (
         <>
