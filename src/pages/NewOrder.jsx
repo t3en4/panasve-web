@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, parseCoords } from '../lib/supabase'
 import { REGLAS_ORO, REGLAS_ORO_NOTA } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
@@ -21,7 +21,18 @@ export default function NewOrder() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     people: '', date: new Date().toISOString().split('T')[0], notes: '', allergies: '',
+    location: '', coords: '',
   })
+
+  // Al crear: pre-llenar la ubicación con la del refugio
+  useEffect(() => {
+    if (editing || !shelter) return
+    setForm(f => ({
+      ...f,
+      location: f.location || shelter.location || '',
+      coords: f.coords || (shelter.lat != null ? `${shelter.lat},${shelter.lng}` : ''),
+    }))
+  }, [editing, shelter])
 
   // Cargar el pedido si estamos editando
   useEffect(() => {
@@ -32,7 +43,10 @@ export default function NewOrder() {
       setType(data.order_type || 'comida')
       setMeals(data.meals || [])
       setItems(data.items?.length ? data.items.map(i => ({ name: i.name, qty: String(i.qty) })) : [{ name: '', qty: '' }])
-      setForm({ people: data.people || '', date: data.order_date, notes: data.notes || '', allergies: data.allergies || '' })
+      setForm({
+        people: data.people || '', date: data.order_date, notes: data.notes || '', allergies: data.allergies || '',
+        location: data.location || '', coords: data.lat != null ? `${data.lat},${data.lng}` : '',
+      })
     })
   }, [editing, id])
 
@@ -83,11 +97,14 @@ export default function NewOrder() {
     }
 
     setSaving(true)
+    const { lat, lng } = parseCoords(form.coords)
     const payload = {
       shelter_id: shelter.id,
       order_type: type,
       order_date: form.date,
       notes: form.notes,
+      location: form.location || null,
+      lat, lng,
     }
     if (type === 'comida') {
       payload.people = parseInt(form.people)
@@ -199,6 +216,21 @@ export default function NewOrder() {
           </div>
         </div>
       )}
+
+      {/* Ubicación de entrega del pedido */}
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 4 }}>Ubicación de entrega</div>
+        <div className="card-sub" style={{ marginBottom: 14 }}>
+          Se copió la de tu refugio. Cámbiala si este pedido se entrega en otro lugar.
+        </div>
+        <div className="form-grid">
+          <div className="field full"><label>Dirección de entrega</label>
+            <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="Ej: La Guaira, Vargas" /></div>
+          <div className="field full"><label>Ubicación en Google Maps</label>
+            <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Pega el enlace de Google Maps o coordenadas" />
+            <span className="field-hint">Sirve para que los proveedores calculen la distancia.</span></div>
+        </div>
+      </div>
 
       <div className="card">
         <div className="field full"><label>Notas adicionales</label>

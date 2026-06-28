@@ -36,13 +36,18 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
     if (next) loadHistory()
   }
 
+  // Ubicación efectiva: la del pedido si existe, si no la del refugio
+  const oLat = order.lat != null ? order.lat : shelter?.lat
+  const oLng = order.lng != null ? order.lng : shelter?.lng
+  const oLocation = order.location || shelter?.location
+
   let dist = null
-  if (profile?.lat != null && shelter?.lat != null) {
-    const d = distanceKm(profile.lat, profile.lng, shelter.lat, shelter.lng)
+  if (profile?.lat != null && oLat != null) {
+    const d = distanceKm(profile.lat, profile.lng, oLat, oLng)
     if (d != null) dist = d.toFixed(1)
   }
 
-  const mapsUrl = shelter?.lat != null ? `https://maps.google.com/?q=${shelter.lat},${shelter.lng}` : null
+  const mapsUrl = oLat != null ? `https://maps.google.com/?q=${oLat},${oLng}` : null
   const isInsumos = order.order_type === 'insumos'
   // Resumen corto para la vista colapsada
   const resumen = isInsumos
@@ -92,7 +97,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
           <div className="order-info" style={{ marginTop: 8 }}>
             <div><span className="label">Contacto:</span>{shelter?.contact || '—'}</div>
             <div><span className="label">Teléfono:</span>{shelter?.phone || '—'}</div>
-            {shelter?.location && <div><span className="label">Ubicación:</span>{shelter.location}</div>}
+            {oLocation && <div><span className="label">Ubicación:</span>{oLocation}</div>}
             {shelter?.estado && <div><span className="label">Estado:</span>{shelter.estado}</div>}
             {shelter?.instagram && <div><span className="label">Instagram:</span>{shelter.instagram}</div>}
             {!isInsumos && order.allergies && <div style={{ gridColumn: '1 / -1' }}><span className="label" style={{ color: 'var(--danger)' }}>⚠️ Alergias:</span>{order.allergies}</div>}

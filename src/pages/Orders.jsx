@@ -94,10 +94,12 @@ export default function Orders() {
     list = list.filter(o => o.status !== 'cancelled')
     list = list.filter(o => o.status !== 'done' || o.claimed_by === profile.id)
     if (profile.lat != null) {
+      const orderLat = (o) => o.lat != null ? o.lat : shelters[o.shelter_id]?.lat
+      const orderLng = (o) => o.lng != null ? o.lng : shelters[o.shelter_id]?.lng
       list.sort((a, b) => {
-        const sa = shelters[a.shelter_id], sb = shelters[b.shelter_id]
-        const da = sa?.lat != null ? distanceKm(profile.lat, profile.lng, sa.lat, sa.lng) ?? 9999 : 9999
-        const db = sb?.lat != null ? distanceKm(profile.lat, profile.lng, sb.lat, sb.lng) ?? 9999 : 9999
+        const la = orderLat(a), lb = orderLat(b)
+        const da = la != null ? distanceKm(profile.lat, profile.lng, la, orderLng(a)) ?? 9999 : 9999
+        const db = lb != null ? distanceKm(profile.lat, profile.lng, lb, orderLng(b)) ?? 9999 : 9999
         return da - db
       })
     }

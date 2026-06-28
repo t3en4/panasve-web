@@ -43,18 +43,20 @@ export default function Profile() {
     if (!isProvider) return
     async function load() {
       const [{ data: ord }, { data: shl }] = await Promise.all([
-        supabase.from('orders').select('shelter_id, order_type, people, items').eq('status', 'pending'),
+        supabase.from('orders').select('shelter_id, order_type, people, items, location, lat, lng').eq('status', 'pending'),
         supabase.from('shelters').select('id, name, lat, lng, estado'),
       ])
       const shMap = {}
       ;(shl || []).forEach(s => { shMap[s.id] = s })
       const marks = (ord || []).map(o => {
         const s = shMap[o.shelter_id]
-        if (!s || s.lat == null) return null
+        const lat = o.lat != null ? o.lat : s?.lat
+        const lng = o.lng != null ? o.lng : s?.lng
+        if (lat == null) return null
         const resumen = o.order_type === 'insumos'
           ? `${(o.items || []).length} insumos`
           : `${o.people} personas`
-        return { lat: s.lat, lng: s.lng, title: s.name, subtitle: resumen }
+        return { lat, lng, title: s?.name || 'Refugio', subtitle: resumen }
       }).filter(Boolean)
       setMapMarkers(marks)
     }
