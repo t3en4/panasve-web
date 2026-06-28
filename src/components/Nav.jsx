@@ -46,9 +46,8 @@ export default function Nav() {
             <>
               <div className="profile-badge">
                 <span className="avatar">{initials}</span>
-                <span>{name.split(' ')[0]}</span>
+                <span className="profile-name" title={name}>{name}</span>
                 {isAdmin && <span className="role-tag">admin</span>}
-                {isShelter && <span className="role-tag" style={{ background: 'var(--success)' }}>refugio</span>}
               </div>
               <button className="btn sm" onClick={handleSignOut}>Salir</button>
             </>
