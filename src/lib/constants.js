@@ -19,6 +19,17 @@ export const PROVIDER_TYPES = [
 export const providerTypeLabel = (v) =>
   PROVIDER_TYPES.find(t => t.value === v)?.label || 'Proveedor'
 
+// Tipos de quien necesita ayuda
+export const SHELTER_TYPES = [
+  { value: 'organizacion', label: 'Organización' },
+  { value: 'refugio', label: 'Refugio' },
+  { value: 'individuo', label: 'Individuo' },
+  { value: 'otro', label: 'Otro' },
+]
+
+export const shelterTypeLabel = (v) =>
+  SHELTER_TYPES.find(t => t.value === v)?.label || 'Refugio'
+
 // Reglas de oro para manejo seguro de alimentos
 export const REGLAS_ORO = [
   { titulo: 'Tiempo', texto: 'Máximo 2 horas fuera de frío (1 hora si hace mucho calor, por encima de 32°C).' },

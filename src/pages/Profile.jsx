@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, parseCoords, distanceKm } from '../lib/supabase'
-import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
+import { ESTADOS, PROVIDER_TYPES, SHELTER_TYPES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import CoordsHelp from '../components/CoordsHelp'
@@ -17,7 +17,7 @@ export default function Profile() {
   const src = isShelter ? shelter : profile
   const [form, setForm] = useState({
     name: '', phone: '', contact: '', contact_recv: '',
-    instagram: '', address: '', location: '', coords: '', estado: '', provider_type: 'restaurante',
+    instagram: '', address: '', location: '', coords: '', estado: '', provider_type: 'restaurante', shelter_type: 'refugio',
   })
 
   // Rellenar el formulario cuando los datos del usuario terminan de cargar
@@ -34,6 +34,7 @@ export default function Profile() {
       coords: src.lat != null ? `${src.lat},${src.lng}` : '',
       estado: src.estado || '',
       provider_type: profile?.provider_type || 'restaurante',
+      shelter_type: shelter?.shelter_type || 'refugio',
     })
   }, [src, shelter, profile])
 
@@ -92,7 +93,8 @@ export default function Profile() {
     if (isShelter) {
       ({ error } = await supabase.from('shelters').update({
         name: form.name, location: form.location, phone: form.phone, contact: form.contact,
-        contact_recv: form.contact_recv, instagram: form.instagram, estado: form.estado, lat, lng,
+        contact_recv: form.contact_recv, instagram: form.instagram, estado: form.estado,
+        shelter_type: form.shelter_type, lat, lng,
       }).eq('id', shelter.id))
     } else {
       ({ error } = await supabase.from('profiles').update({
@@ -114,9 +116,15 @@ export default function Profile() {
       <div className="section-header"><div className="section-title">Mi perfil</div></div>
       <div className="card" style={{ maxWidth: 620 }}>
         <div className="form-grid">
-          <div className="field"><label>{isShelter ? 'Nombre del refugio' : 'Nombre / Negocio'}</label>
+          <div className="field"><label>{isShelter ? 'Nombre (organización, refugio o tuyo)' : 'Nombre / Negocio'}</label>
             <input value={form.name} onChange={e => set('name', e.target.value)} /></div>
           <div className="field"><label>Email</label><input value={profile.email} disabled /></div>
+          {isShelter && (
+            <div className="field"><label>Tipo</label>
+              <select value={form.shelter_type} onChange={e => set('shelter_type', e.target.value)}>
+                {SHELTER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select></div>
+          )}
           {!isShelter && (
             <div className="field"><label>Tipo de proveedor</label>
               <select value={form.provider_type} onChange={e => set('provider_type', e.target.value)}>

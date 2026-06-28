@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { providerTypeLabel } from '../lib/constants'
+import { providerTypeLabel, shelterTypeLabel } from '../lib/constants'
 
 export default function Admin() {
   const { isAdmin } = useAuth()
@@ -203,17 +203,17 @@ export default function Admin() {
         <div className="table-wrap">
           <table className="data">
             <thead>
-              <tr><th>Refugio</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
+              <tr><th>Refugio</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
             </thead>
             <tbody>
               {shelters.map(s => (
                 <tr key={s.id}>
-                  <td>{s.name}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
+                  <td>{s.name}</td><td>{shelterTypeLabel(s.shelter_type)}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
                   <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
                   <td className="muted">{fmtDate(s.created_at)}</td>
                 </tr>
               ))}
-              {shelters.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
+              {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
             </tbody>
           </table>
         </div>

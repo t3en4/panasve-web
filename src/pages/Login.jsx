@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, parseCoords, traducirError } from '../lib/supabase'
-import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
+import { ESTADOS, PROVIDER_TYPES, SHELTER_TYPES } from '../lib/constants'
 import { useToast } from '../components/Toast'
 import CoordsHelp from '../components/CoordsHelp'
 
@@ -15,7 +15,7 @@ export default function Login() {
   const [login, setLogin] = useState({ email: '', password: '' })
   const [reg, setReg] = useState({
     name: '', email: '', password: '', phone: '', contact: '', instagram: '',
-    address: '', coords: '', location: '', contact_recv: '', estado: '', provider_type: 'restaurante',
+    address: '', coords: '', location: '', contact_recv: '', estado: '', provider_type: 'restaurante', shelter_type: 'refugio',
   })
 
   function setR(k, v) { setReg(r => ({ ...r, [k]: v })) }
@@ -66,7 +66,7 @@ export default function Login() {
         await supabase.from('shelters').insert({
           owner_id: data.user.id, name: reg.name, location: reg.location, phone: reg.phone,
           email: reg.email, contact: reg.contact, contact_recv: reg.contact_recv,
-          instagram: reg.instagram, estado: reg.estado, lat, lng,
+          instagram: reg.instagram, estado: reg.estado, shelter_type: reg.shelter_type, lat, lng,
         })
       } else {
         // Completa el perfil del proveedor
@@ -150,16 +150,16 @@ export default function Login() {
             <div className="card-title" style={{ marginBottom: 6 }}>¿Cómo quieres registrarte?</div>
             <div className="card-sub" style={{ marginBottom: 18 }}>Elige el tipo de cuenta.</div>
             <button className="role-option" onClick={() => { setRegRole('shelter'); setMode('register') }}>
-              <span className="role-emoji">🏠</span>
+              <span className="role-emoji">🙏</span>
               <span>
-                <strong>Soy un refugio / necesito ayuda</strong>
-                <span className="role-desc">Publica y gestiona pedidos de comida o insumos.</span>
+                <strong>Necesito ayuda</strong>
+                <span className="role-desc">Publica pedidos de comida o insumos para tu organización, refugio o familia.</span>
               </span>
             </button>
             <button className="role-option" onClick={() => { setRegRole('provider'); setMode('register') }}>
               <span className="role-emoji">🤝</span>
               <span>
-                <strong>Soy proveedor / quiero ayudar</strong>
+                <strong>Quiero ayudar</strong>
                 <span className="role-desc">Restaurante, chef, farmacia, individuo u otro. Toma pedidos cercanos.</span>
               </span>
             </button>
@@ -170,11 +170,17 @@ export default function Login() {
         {mode === 'register' && (
           <div className="card">
             <div className="card-title" style={{ marginBottom: 16 }}>
-              {regRole === 'shelter' ? 'Registrar refugio' : 'Registrar proveedor'}
+              {regRole === 'shelter' ? 'Necesito ayuda' : 'Quiero ayudar'}
             </div>
             <div className="form-grid">
-              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre del refugio' : 'Nombre / Negocio'} <span className="req">*</span></label>
+              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre (organización, refugio o tuyo)' : 'Nombre / Negocio'} <span className="req">*</span></label>
                 <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José' : 'Ej: Mi Restaurante'} /></div>
+              {regRole === 'shelter' && (
+                <div className="field"><label>Tipo <span className="req">*</span></label>
+                  <select value={reg.shelter_type} onChange={e => setR('shelter_type', e.target.value)}>
+                    {SHELTER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select></div>
+              )}
               {regRole === 'provider' && (
                 <div className="field"><label>Tipo de proveedor <span className="req">*</span></label>
                   <select value={reg.provider_type} onChange={e => setR('provider_type', e.target.value)}>
