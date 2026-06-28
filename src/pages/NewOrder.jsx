@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, parseCoords } from '../lib/supabase'
+import { supabase, parseCoords, isShortMapsLink } from '../lib/supabase'
 import { useToast } from '../components/Toast'
 
 const MEALS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena']
@@ -142,8 +142,23 @@ export default function NewOrder() {
           <div className="field"><label>Instagram</label>
             <input value={form.instagram} onChange={e => set('instagram', e.target.value)} placeholder="@nombre_perfil" /></div>
           <div className="field full"><label>Pin de ubicación (Google Maps)</label>
-            <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Coordenadas, ej: 10.4806,-66.9036" />
-            <span className="field-hint">Abre Google Maps, mantén presionada tu ubicación y copia las coordenadas que aparecen.</span></div>
+            <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Pega aquí el enlace de Google Maps" />
+            {(() => {
+              if (!form.coords) {
+                return <span className="field-hint">Abre Google Maps, busca la ubicación, y pega el enlace aquí. También puedes pegar coordenadas como 10.4806,-66.9036</span>
+              }
+              const { lat } = parseCoords(form.coords)
+              if (lat != null) {
+                return <span className="field-hint" style={{ color: 'var(--success)' }}>✓ Ubicación reconocida correctamente</span>
+              }
+              if (isShortMapsLink(form.coords)) {
+                return <span className="field-hint" style={{ color: 'var(--warning)' }}>
+                  Este es un enlace corto y no podemos leer las coordenadas. Ábrelo en el navegador y copia el enlace largo que aparece en la barra de direcciones (el que contiene @lat,lng).
+                </span>
+              }
+              return <span className="field-hint" style={{ color: 'var(--warning)' }}>No reconocimos una ubicación en ese texto. Pega el enlace de Google Maps o coordenadas como 10.4806,-66.9036</span>
+            })()}
+          </div>
         </div>
       </div>
 
