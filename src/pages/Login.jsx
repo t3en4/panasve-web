@@ -6,11 +6,13 @@ import { useToast } from '../components/Toast'
 export default function Login() {
   const toast = useToast()
   const navigate = useNavigate()
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('login')        // login | choose | register
+  const [regRole, setRegRole] = useState(null)     // 'shelter' | 'provider'
   const [busy, setBusy] = useState(false)
   const [login, setLogin] = useState({ email: '', password: '' })
   const [reg, setReg] = useState({
-    name: '', email: '', password: '', phone: '', contact: '', instagram: '', address: '', coords: '',
+    name: '', email: '', password: '', phone: '', contact: '', instagram: '',
+    address: '', coords: '', location: '', contact_recv: '',
   })
 
   function setR(k, v) { setReg(r => ({ ...r, [k]: v })) }
@@ -26,33 +28,43 @@ export default function Login() {
   }
 
   async function doRegister() {
-    if (!reg.name || !reg.email || !reg.password || !reg.address) {
-      toast('Completa los campos obligatorios.', 'error'); return
-    }
+    if (!reg.name || !reg.email || !reg.password) { toast('Completa los campos obligatorios.', 'error'); return }
     if (reg.password.length < 6) { toast('La contraseña debe tener al menos 6 caracteres.', 'error'); return }
+    if (regRole === 'shelter' && (!reg.location || !reg.phone || !reg.contact)) {
+      toast('Completa ubicación, teléfono y persona de contacto.', 'error'); return
+    }
+    if (regRole === 'provider' && !reg.address) { toast('Ingresa la dirección.', 'error'); return }
 
     setBusy(true)
     const { data, error } = await supabase.auth.signUp({
       email: reg.email,
       password: reg.password,
-      options: { data: { name: reg.name } },
+      options: { data: { name: reg.name, role: regRole } },
     })
     if (error) { setBusy(false); toast(error.message || 'No se pudo crear la cuenta.', 'error'); return }
 
-    // El trigger crea el perfil base; completamos los datos del proveedor
     const { lat, lng } = parseCoords(reg.coords)
     if (data.user) {
-      await supabase.from('profiles').update({
-        name: reg.name, phone: reg.phone, contact: reg.contact,
-        instagram: reg.instagram, address: reg.address, lat, lng,
-      }).eq('id', data.user.id)
+      if (regRole === 'shelter') {
+        // Crea el registro del refugio vinculado a la cuenta
+        await supabase.from('shelters').insert({
+          owner_id: data.user.id, name: reg.name, location: reg.location, phone: reg.phone,
+          email: reg.email, contact: reg.contact, contact_recv: reg.contact_recv,
+          instagram: reg.instagram, lat, lng,
+        })
+      } else {
+        // Completa el perfil del proveedor
+        await supabase.from('profiles').update({
+          name: reg.name, phone: reg.phone, contact: reg.contact,
+          instagram: reg.instagram, address: reg.address, lat, lng,
+        }).eq('id', data.user.id)
+      }
     }
     setBusy(false)
 
     if (!data.session) {
       toast('Cuenta creada. Revisa tu correo para confirmar antes de entrar.')
-      setMode('login')
-      return
+      setMode('login'); return
     }
     toast('¡Cuenta creada! Bienvenido a PanasVE.')
     navigate('/')
@@ -61,11 +73,12 @@ export default function Login() {
   return (
     <div className="content">
       <div className="auth-wrap">
-        {mode === 'login' ? (
+
+        {mode === 'login' && (
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="card-title">Acceso para restaurantes y chefs</div>
-              <div className="card-sub">Inicia sesión para ver pedidos cercanos a ti.</div>
+              <div className="card-title">Iniciar sesión</div>
+              <div className="card-sub">Para refugios, restaurantes y chefs.</div>
             </div>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Email</label>
@@ -81,40 +94,82 @@ export default function Login() {
             </button>
             <div className="divider" />
             <div style={{ textAlign: 'center' }} className="muted">¿No tienes cuenta?</div>
-            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('register')}>
-              Registrarme como restaurante / chef
+            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('choose')}>
+              Crear una cuenta
             </button>
           </div>
-        ) : (
+        )}
+
+        {mode === 'choose' && (
           <div className="card">
-            <div className="card-title" style={{ marginBottom: 16 }}>Crear cuenta</div>
+            <div className="card-title" style={{ marginBottom: 6 }}>¿Cómo quieres registrarte?</div>
+            <div className="card-sub" style={{ marginBottom: 18 }}>Elige el tipo de cuenta.</div>
+            <button className="role-option" onClick={() => { setRegRole('shelter'); setMode('register') }}>
+              <span className="role-emoji">🏠</span>
+              <span>
+                <strong>Soy un refugio / necesito ayuda</strong>
+                <span className="role-desc">Publica y gestiona pedidos de comida o insumos.</span>
+              </span>
+            </button>
+            <button className="role-option" onClick={() => { setRegRole('provider'); setMode('register') }}>
+              <span className="role-emoji">👨‍🍳</span>
+              <span>
+                <strong>Soy restaurante / chef / proveedor</strong>
+                <span className="role-desc">Toma pedidos cercanos y ayúdalos a cumplirse.</span>
+              </span>
+            </button>
+            <button className="btn" style={{ width: '100%', marginTop: 12 }} onClick={() => setMode('login')}>Volver</button>
+          </div>
+        )}
+
+        {mode === 'register' && (
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 16 }}>
+              {regRole === 'shelter' ? 'Registrar refugio' : 'Registrar restaurante / chef'}
+            </div>
             <div className="form-grid">
-              <div className="field full"><label>Nombre / Restaurante <span className="req">*</span></label>
-                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder="Mi Restaurante" /></div>
+              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre del refugio' : 'Nombre / Restaurante'} <span className="req">*</span></label>
+                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José' : 'Mi Restaurante'} /></div>
               <div className="field"><label>Email <span className="req">*</span></label>
                 <input type="email" value={reg.email} onChange={e => setR('email', e.target.value)} placeholder="tu@email.com" /></div>
               <div className="field"><label>Contraseña <span className="req">*</span></label>
                 <input type="password" value={reg.password} onChange={e => setR('password', e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
-              <div className="field"><label>Teléfono</label>
-                <input value={reg.phone} onChange={e => setR('phone', e.target.value)} placeholder="+58 212 ..." /></div>
-              <div className="field"><label>Persona de contacto</label>
-                <input value={reg.contact} onChange={e => setR('contact', e.target.value)} placeholder="Nombre" /></div>
+
+              {regRole === 'shelter' ? (
+                <>
+                  <div className="field"><label>Ubicación / dirección <span className="req">*</span></label>
+                    <input value={reg.location} onChange={e => setR('location', e.target.value)} placeholder="Ej: La Guaira, Vargas" /></div>
+                  <div className="field"><label>Teléfono <span className="req">*</span></label>
+                    <input value={reg.phone} onChange={e => setR('phone', e.target.value)} placeholder="+58 212 ..." /></div>
+                  <div className="field"><label>Persona de contacto <span className="req">*</span></label>
+                    <input value={reg.contact} onChange={e => setR('contact', e.target.value)} placeholder="Responsable" /></div>
+                  <div className="field"><label>Persona que recibe</label>
+                    <input value={reg.contact_recv} onChange={e => setR('contact_recv', e.target.value)} placeholder="Quien recibe" /></div>
+                </>
+              ) : (
+                <>
+                  <div className="field"><label>Teléfono</label>
+                    <input value={reg.phone} onChange={e => setR('phone', e.target.value)} placeholder="+58 212 ..." /></div>
+                  <div className="field"><label>Persona de contacto</label>
+                    <input value={reg.contact} onChange={e => setR('contact', e.target.value)} placeholder="Nombre" /></div>
+                  <div className="field full"><label>Dirección <span className="req">*</span></label>
+                    <input value={reg.address} onChange={e => setR('address', e.target.value)} placeholder="Av. Principal, Municipio, Ciudad" /></div>
+                </>
+              )}
+
               <div className="field"><label>Instagram</label>
                 <input value={reg.instagram} onChange={e => setR('instagram', e.target.value)} placeholder="@perfil" /></div>
-              <div className="field full"><label>Dirección <span className="req">*</span></label>
-                <input value={reg.address} onChange={e => setR('address', e.target.value)} placeholder="Av. Principal, Municipio, Ciudad" /></div>
-              <div className="field full"><label>Coordenadas (para ordenar por cercanía)</label>
-                <input value={reg.coords} onChange={e => setR('coords', e.target.value)} placeholder="Ej: 10.4806,-66.9036" />
-                <span className="field-hint">Permite mostrarte primero los pedidos más cercanos a tu local.</span></div>
+              <div className="field full"><label>Ubicación en Google Maps</label>
+                <input value={reg.coords} onChange={e => setR('coords', e.target.value)} placeholder="Pega el enlace de Google Maps o coordenadas" />
+                <span className="field-hint">Sirve para ordenar los pedidos por cercanía.</span></div>
             </div>
             <button className="btn primary" style={{ width: '100%', marginTop: 16 }} onClick={doRegister} disabled={busy}>
               {busy ? 'Creando…' : 'Crear cuenta'}
             </button>
-            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('login')}>
-              Ya tengo cuenta
-            </button>
+            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('choose')}>Volver</button>
           </div>
         )}
+
       </div>
     </div>
   )

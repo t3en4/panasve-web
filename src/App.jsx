@@ -31,6 +31,7 @@ function Shell() {
       <Routes>
         <Route path="/" element={<Orders />} />
         <Route path="/nuevo" element={<NewOrder />} />
+        <Route path="/editar/:id" element={<NewOrder />} />
         <Route path="/login" element={<Login />} />
         <Route path="/perfil" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />

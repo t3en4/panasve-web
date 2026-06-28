@@ -1,48 +1,50 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase, parseCoords, isShortMapsLink } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 
 const MEALS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena']
+const MAX_ITEMS = 20
 
 export default function NewOrder() {
+  const { id } = useParams()          // si viene, estamos editando
+  const editing = !!id
+  const { shelter, isShelter, loading } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
-  const [shelters, setShelters] = useState([])
-  const [matches, setMatches] = useState([])
-  const [filledId, setFilledId] = useState(null)
+
+  const [type, setType] = useState('comida')
   const [meals, setMeals] = useState([])
+  const [items, setItems] = useState([{ name: '', qty: '' }])
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    name: '', location: '', phone: '', email: '', contact: '', contact_recv: '',
-    instagram: '', coords: '', people: '', date: new Date().toISOString().split('T')[0], notes: '',
+    people: '', date: new Date().toISOString().split('T')[0], notes: '',
   })
-  const nameRef = useRef()
 
+  // Cargar el pedido si estamos editando
   useEffect(() => {
-    supabase.from('shelters').select('*').then(({ data }) => setShelters(data || []))
-  }, [])
+    if (!editing) return
+    supabase.from('orders').select('*').eq('id', id).single().then(({ data }) => {
+      if (!data) { toast('Pedido no encontrado.', 'error'); navigate('/'); return }
+      if (data.status !== 'pending') { toast('Solo se pueden editar pedidos pendientes.', 'error'); navigate('/'); return }
+      setType(data.order_type || 'comida')
+      setMeals(data.meals || [])
+      setItems(data.items?.length ? data.items.map(i => ({ name: i.name, qty: String(i.qty) })) : [{ name: '', qty: '' }])
+      setForm({ people: data.people || '', date: data.order_date, notes: data.notes || '' })
+    })
+  }, [editing, id])
+
+  if (loading) return <div className="loading">Cargando…</div>
+  if (!isShelter) {
+    return <div className="content"><div className="empty-state">
+      <span className="icon">🔒</span>
+      <p>Solo los refugios registrados pueden crear pedidos.</p>
+      <button className="btn primary" style={{ marginTop: 12 }} onClick={() => navigate('/login')}>Iniciar sesión</button>
+    </div></div>
+  }
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
-
-  function onNameChange(v) {
-    set('name', v)
-    setFilledId(null)
-    if (v.length < 2) { setMatches([]); return }
-    setMatches(shelters.filter(s => s.name.toLowerCase().includes(v.toLowerCase())).slice(0, 6))
-  }
-
-  function fillShelter(s) {
-    setForm(f => ({
-      ...f,
-      name: s.name, location: s.location || '', phone: s.phone || '', email: s.email || '',
-      contact: s.contact || '', contact_recv: s.contact_recv || '', instagram: s.instagram || '',
-      coords: s.lat != null ? `${s.lat},${s.lng}` : '',
-    }))
-    setFilledId(s.id)
-    setMatches([])
-  }
-
   function toggleMeal(m) {
     setMeals(prev => {
       if (m === 'Todos') return ['Todos']
@@ -51,54 +53,62 @@ export default function NewOrder() {
     })
   }
 
+  // --- insumos ---
+  function setItem(i, key, val) {
+    setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [key]: val } : it))
+  }
+  function addItem() {
+    if (items.length >= MAX_ITEMS) { toast(`Máximo ${MAX_ITEMS} insumos por pedido.`, 'error'); return }
+    setItems(prev => [...prev, { name: '', qty: '' }])
+  }
+  function removeItem(i) {
+    setItems(prev => prev.length === 1 ? [{ name: '', qty: '' }] : prev.filter((_, idx) => idx !== i))
+  }
+
   async function submit() {
-    if (!form.name || !form.location || !form.phone || !form.contact) {
-      toast('Completa los campos obligatorios del refugio.', 'error'); return
+    // Validación según tipo
+    if (type === 'comida') {
+      const people = parseInt(form.people)
+      if (!people || people < 1) { toast('Indica el número de personas.', 'error'); return }
+      if (!meals.length) { toast('Selecciona al menos un tipo de comida.', 'error'); return }
+    } else {
+      const valid = items.filter(i => i.name.trim() && parseFloat(i.qty) > 0)
+      if (!valid.length) { toast('Agrega al menos un insumo con su cantidad.', 'error'); return }
     }
-    const people = parseInt(form.people)
-    if (!people || people < 1) { toast('Indica el número de personas.', 'error'); return }
-    if (!meals.length) { toast('Selecciona al menos un tipo de comida.', 'error'); return }
 
     setSaving(true)
-    const { lat, lng } = parseCoords(form.coords)
-    let shelterId = filledId
+    const payload = {
+      shelter_id: shelter.id,
+      order_type: type,
+      order_date: form.date,
+      notes: form.notes,
+    }
+    if (type === 'comida') {
+      payload.people = parseInt(form.people)
+      payload.meals = meals
+      payload.items = null
+    } else {
+      payload.people = null
+      payload.meals = null
+      payload.items = items
+        .filter(i => i.name.trim() && parseFloat(i.qty) > 0)
+        .map(i => ({ name: i.name.trim(), qty: parseFloat(i.qty) }))
+    }
 
     try {
-      if (!shelterId) {
-        // ¿existe por nombre? (evita duplicados)
-        const { data: existing } = await supabase
-          .from('shelters').select('id').ilike('name', form.name.trim()).maybeSingle()
-        if (existing) {
-          shelterId = existing.id
-          await supabase.from('shelters').update({
-            location: form.location, phone: form.phone, email: form.email, contact: form.contact,
-            contact_recv: form.contact_recv, instagram: form.instagram, lat, lng,
-          }).eq('id', shelterId)
-        } else {
-          const { data: created, error } = await supabase.from('shelters').insert({
-            name: form.name.trim(), location: form.location, phone: form.phone, email: form.email,
-            contact: form.contact, contact_recv: form.contact_recv, instagram: form.instagram, lat, lng,
-          }).select('id').single()
-          if (error) throw error
-          shelterId = created.id
-        }
+      if (editing) {
+        const { error } = await supabase.from('orders').update(payload).eq('id', id)
+        if (error) throw error
+        toast('Pedido actualizado.')
       } else {
-        await supabase.from('shelters').update({
-          location: form.location, phone: form.phone, email: form.email, contact: form.contact,
-          contact_recv: form.contact_recv, instagram: form.instagram, lat, lng,
-        }).eq('id', shelterId)
+        const { error } = await supabase.from('orders').insert({ ...payload, status: 'pending' })
+        if (error) throw error
+        toast('¡Pedido publicado! Los panas cercanos pueden verlo ahora.')
       }
-
-      const { error: ordErr } = await supabase.from('orders').insert({
-        shelter_id: shelterId, people, meals, order_date: form.date, notes: form.notes, status: 'pending',
-      })
-      if (ordErr) throw ordErr
-
-      toast('¡Pedido enviado! Los panas cercanos pueden verlo ahora.')
       navigate('/')
     } catch (e) {
       console.error(e)
-      toast('Hubo un error al enviar el pedido. Intenta de nuevo.', 'error')
+      toast('Hubo un error al guardar. Intenta de nuevo.', 'error')
     } finally {
       setSaving(false)
     }
@@ -106,84 +116,77 @@ export default function NewOrder() {
 
   return (
     <div className="content">
-      <div className="section-header"><div className="section-title">Nuevo pedido de alimentos</div></div>
-
-      <div className="card">
-        <div style={{ marginBottom: 16 }}>
-          <div className="card-title">Datos del refugio</div>
-          <div className="card-sub">Si ya registraste tu refugio antes, escribe el nombre para autocompletar.</div>
-        </div>
-
-        <div className="form-grid">
-          <div className="field full autocomplete-wrap">
-            <label>Nombre del refugio <span className="req">*</span></label>
-            <input ref={nameRef} value={form.name} placeholder="Ej: Refugio San José"
-              onChange={e => onNameChange(e.target.value)} autoComplete="off" />
-            {matches.length > 0 && (
-              <div className="autocomplete-list">
-                {matches.map(s => (
-                  <div key={s.id} className="autocomplete-item" onClick={() => fillShelter(s)}>
-                    {s.name} — {s.location}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="field"><label>Ubicación / dirección <span className="req">*</span></label>
-            <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="Ej: La Guaira, Vargas" /></div>
-          <div className="field"><label>Teléfono de contacto <span className="req">*</span></label>
-            <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+58 212 ..." /></div>
-          <div className="field"><label>Email</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="refugio@email.com" /></div>
-          <div className="field"><label>Persona de contacto <span className="req">*</span></label>
-            <input value={form.contact} onChange={e => set('contact', e.target.value)} placeholder="Nombre del responsable" /></div>
-          <div className="field"><label>Persona que recibe</label>
-            <input value={form.contact_recv} onChange={e => set('contact_recv', e.target.value)} placeholder="Nombre de quien recibe" /></div>
-          <div className="field"><label>Instagram</label>
-            <input value={form.instagram} onChange={e => set('instagram', e.target.value)} placeholder="@nombre_perfil" /></div>
-          <div className="field full"><label>Pin de ubicación (Google Maps)</label>
-            <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Pega aquí el enlace de Google Maps" />
-            {(() => {
-              if (!form.coords) {
-                return <span className="field-hint">Abre Google Maps, busca la ubicación, y pega el enlace aquí. También puedes pegar coordenadas como 10.4806,-66.9036</span>
-              }
-              const { lat } = parseCoords(form.coords)
-              if (lat != null) {
-                return <span className="field-hint" style={{ color: 'var(--success)' }}>✓ Ubicación reconocida correctamente</span>
-              }
-              if (isShortMapsLink(form.coords)) {
-                return <span className="field-hint" style={{ color: 'var(--warning)' }}>
-                  Este es un enlace corto y no podemos leer las coordenadas. Ábrelo en el navegador y copia el enlace largo que aparece en la barra de direcciones (el que contiene @lat,lng).
-                </span>
-              }
-              return <span className="field-hint" style={{ color: 'var(--warning)' }}>No reconocimos una ubicación en ese texto. Pega el enlace de Google Maps o coordenadas como 10.4806,-66.9036</span>
-            })()}
-          </div>
-        </div>
+      <div className="section-header">
+        <div className="section-title">{editing ? 'Editar pedido' : 'Nuevo pedido'}</div>
       </div>
 
       <div className="card">
-        <div className="card-title" style={{ marginBottom: 16 }}>Detalles del pedido</div>
-        <div className="form-grid">
-          <div className="field"><label>Número de personas a alimentar <span className="req">*</span></label>
-            <input type="number" min="1" value={form.people} onChange={e => set('people', e.target.value)} placeholder="Ej: 150" /></div>
-          <div className="field"><label>Fecha del pedido</label>
-            <input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
-          <div className="field full"><label>Tipo de comida requerida <span className="req">*</span></label>
-            <div className="meal-selector">
-              {[...MEALS, 'Todos'].map(m => (
-                <button key={m} type="button" className={`meal-chip ${meals.includes(m) ? 'selected' : ''}`} onClick={() => toggleMeal(m)}>{m}</button>
-              ))}
-            </div></div>
-          <div className="field full"><label>Notas adicionales</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Restricciones dietéticas, alergias, necesidades especiales..." /></div>
+        <div className="card-sub" style={{ marginBottom: 6 }}>Publicando como</div>
+        <div style={{ fontWeight: 600 }}>{shelter?.name} — <span className="muted" style={{ fontWeight: 400 }}>{shelter?.location}</span></div>
+      </div>
+
+      {/* Tipo de pedido */}
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>¿Qué necesitas?</div>
+        <div className="type-toggle">
+          <button className={`type-btn ${type === 'comida' ? 'active' : ''}`} onClick={() => setType('comida')}>
+            🍽️ Comida
+          </button>
+          <button className={`type-btn ${type === 'insumos' ? 'active' : ''}`} onClick={() => setType('insumos')}>
+            📦 Insumos
+          </button>
         </div>
+      </div>
+
+      {/* Detalles según tipo */}
+      {type === 'comida' ? (
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 16 }}>Detalles de comida</div>
+          <div className="form-grid">
+            <div className="field"><label>Número de personas a alimentar <span className="req">*</span></label>
+              <input type="number" min="1" value={form.people} onChange={e => set('people', e.target.value)} placeholder="Ej: 150" /></div>
+            <div className="field"><label>Fecha del pedido</label>
+              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
+            <div className="field full"><label>Tipo de comida <span className="req">*</span></label>
+              <div className="meal-selector">
+                {[...MEALS, 'Todos'].map(m => (
+                  <button key={m} type="button" className={`meal-chip ${meals.includes(m) ? 'selected' : ''}`} onClick={() => toggleMeal(m)}>{m}</button>
+                ))}
+              </div></div>
+          </div>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 4 }}>Lista de insumos</div>
+          <div className="card-sub" style={{ marginBottom: 16 }}>Agrega cada insumo con su cantidad (máximo {MAX_ITEMS}).</div>
+          <div className="items-list">
+            {items.map((it, i) => (
+              <div className="item-row" key={i}>
+                <input className="item-name" value={it.name} onChange={e => setItem(i, 'name', e.target.value)} placeholder="Insumo (ej: Agua, Arroz, Pañales)" />
+                <input className="item-qty" type="number" min="0" value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="Cant." />
+                <button className="item-remove" onClick={() => removeItem(i)} aria-label="Quitar insumo">✕</button>
+              </div>
+            ))}
+          </div>
+          <button className="btn sm" style={{ marginTop: 12 }} onClick={addItem} disabled={items.length >= MAX_ITEMS}>
+            + Agregar insumo {items.length >= MAX_ITEMS && '(máx alcanzado)'}
+          </button>
+          <div className="form-grid" style={{ marginTop: 16 }}>
+            <div className="field"><label>Fecha del pedido</label>
+              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="field full"><label>Notas adicionales</label>
+          <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Restricciones, detalles de entrega, necesidades especiales..." /></div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24 }}>
         <button className="btn" onClick={() => navigate('/')}>Cancelar</button>
         <button className="btn primary" onClick={submit} disabled={saving}>
-          {saving ? 'Enviando…' : 'Enviar pedido'}
+          {saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Publicar pedido'}
         </button>
       </div>
     </div>

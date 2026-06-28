@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
 
 export default function Orders() {
-  const { profile } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isProvider } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -29,7 +29,6 @@ export default function Orders() {
 
   useEffect(() => {
     load()
-    // Realtime: refrescar cuando cambian los pedidos
     const channel = supabase
       .channel('orders-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
@@ -37,41 +36,27 @@ export default function Orders() {
     return () => supabase.removeChannel(channel)
   }, [load])
 
-  // Aplica un cambio local al instante; si el servidor falla, revierte.
   function patchLocal(orderId, changes) {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...changes } : o))
   }
 
   async function claim(order) {
-    const now = new Date().toISOString()
-    const prev = orders
-    // Cambio inmediato en pantalla
+    const now = new Date().toISOString(); const prev = orders
     patchLocal(order.id, { status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
     setBusy(true)
-    const { error } = await supabase
-      .from('orders')
+    const { error } = await supabase.from('orders')
       .update({ status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
-      .eq('id', order.id)
-      .eq('status', 'pending') // evita choque si otro lo tomó primero
+      .eq('id', order.id).eq('status', 'pending')
     setBusy(false)
-    if (error) {
-      setOrders(prev) // revierte
-      toast('No se pudo tomar el pedido. Quizá ya fue tomado.', 'error')
-      load()
-      return
-    }
+    if (error) { setOrders(prev); toast('No se pudo tomar el pedido. Quizá ya fue tomado.', 'error'); load(); return }
     toast('Pedido tomado. ¡Gracias por ayudar, pana!')
   }
 
   async function deliver(order) {
-    const now = new Date().toISOString()
-    const prev = orders
+    const now = new Date().toISOString(); const prev = orders
     patchLocal(order.id, { status: 'done', done_at: now })
     setBusy(true)
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'done', done_at: now })
-      .eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ status: 'done', done_at: now }).eq('id', order.id)
     setBusy(false)
     if (error) { setOrders(prev); toast('No se pudo actualizar.', 'error'); return }
     toast('Pedido marcado como entregado. ¡Excelente trabajo!')
@@ -81,19 +66,30 @@ export default function Orders() {
     const prev = orders
     patchLocal(order.id, { status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null })
     setBusy(true)
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null })
-      .eq('id', order.id)
+    const { error } = await supabase.from('orders')
+      .update({ status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null }).eq('id', order.id)
     setBusy(false)
     if (error) { setOrders(prev); toast('No se pudo liberar.', 'error'); return }
     toast('Pedido liberado y disponible nuevamente.')
   }
 
-  // Filtrado y orden
+  async function cancel(order) {
+    if (!window.confirm('¿Seguro que quieres cancelar este pedido?')) return
+    const prev = orders
+    patchLocal(order.id, { status: 'cancelled' })
+    setBusy(true)
+    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+    setBusy(false)
+    if (error) { setOrders(prev); toast('No se pudo cancelar.', 'error'); return }
+    toast('Pedido cancelado.')
+  }
+
+  // Filtrado y orden según rol
   let list = [...orders]
-  if (profile) {
-    // proveedor: oculta los entregados que no son suyos, ordena por cercanía
+  if (isShelter && myShelter) {
+    list = list.filter(o => o.shelter_id === myShelter.id)
+  } else if (isProvider) {
+    list = list.filter(o => o.status !== 'cancelled')
     list = list.filter(o => o.status !== 'done' || o.claimed_by === profile.id)
     if (profile.lat != null) {
       list.sort((a, b) => {
@@ -103,33 +99,37 @@ export default function Orders() {
         return da - db
       })
     }
+  } else {
+    // anónimo: solo pendientes
+    list = list.filter(o => o.status === 'pending')
   }
   if (filter !== 'all') list = list.filter(o => o.status === filter)
 
+  const base = isShelter && myShelter ? orders.filter(o => o.shelter_id === myShelter.id) : orders
   const stats = {
-    pending: orders.filter(o => o.status === 'pending').length,
-    progress: orders.filter(o => o.status === 'progress').length,
-    done: orders.filter(o => o.status === 'done').length,
+    pending: base.filter(o => o.status === 'pending').length,
+    progress: base.filter(o => o.status === 'progress').length,
+    done: base.filter(o => o.status === 'done').length,
   }
 
-  const filters = [
-    ['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'],
-  ]
+  const filters = isShelter
+    ? [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']]
+    : [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados']]
+
+  const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
   return (
     <div className="content">
       <div className="section-header">
         <div>
-          <div className="section-title">
-            {profile ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'}
-          </div>
-          {profile && profile.lat == null && (
+          <div className="section-title">{title}</div>
+          {isProvider && profile.lat == null && (
             <div className="muted">Agrega tus coordenadas en tu perfil para ordenar por cercanía.</div>
           )}
+          {!profile && <div className="muted">Inicia sesión para tomar o publicar pedidos.</div>}
         </div>
-        {!profile && (
-          <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>
-        )}
+        {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
+        {!profile && <button className="btn primary" onClick={() => navigate('/login')}>Iniciar sesión</button>}
       </div>
 
       <div className="stats-row">
@@ -147,18 +147,14 @@ export default function Orders() {
       {loading ? (
         <div className="loading">Cargando pedidos…</div>
       ) : list.length === 0 ? (
-        <div className="empty-state"><span className="icon">📋</span><p>No hay pedidos que mostrar.</p></div>
+        <div className="empty-state">
+          <span className="icon">📋</span>
+          <p>{isShelter ? 'Aún no tienes pedidos. Crea uno nuevo.' : 'No hay pedidos que mostrar.'}</p>
+        </div>
       ) : (
         list.map(o => (
-          <OrderCard
-            key={o.id}
-            order={o}
-            shelter={shelters[o.shelter_id]}
-            onClaim={claim}
-            onDeliver={deliver}
-            onRelease={release}
-            busy={busy}
-          />
+          <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
+            onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
         ))
       )}
     </div>
