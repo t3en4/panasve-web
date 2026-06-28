@@ -18,7 +18,7 @@ function loadMaps() {
   return mapsPromise
 }
 
-export default function OrdersMap({ center, markers }) {
+export default function OrdersMap({ center, markers, markerColor }) {
   const ref = useRef(null)
   const [error, setError] = useState(null)
 

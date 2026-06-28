@@ -5,6 +5,7 @@ import { ESTADOS } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
+import OrdersMap from '../components/OrdersMap'
 
 export default function Orders() {
   const { profile, shelter: myShelter, isShelter, isProvider } = useAuth()
@@ -12,6 +13,8 @@ export default function Orders() {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [shelters, setShelters] = useState({})
+  const [providers, setProviders] = useState([])
+  const [view, setView] = useState('lista')        // lista | mapa
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [estadoFilter, setEstadoFilter] = useState('all')
@@ -28,6 +31,13 @@ export default function Orders() {
     setShelters(map)
     setLoading(false)
   }, [])
+
+  // Cargar proveedores (para que los refugios los vean en el mapa)
+  useEffect(() => {
+    if (!isShelter) return
+    supabase.from('profiles').select('name, provider_type, lat, lng, phone, estado').eq('role', 'provider')
+      .then(({ data }) => setProviders(data || []))
+  }, [isShelter])
 
   useEffect(() => {
     load()
@@ -136,6 +146,29 @@ export default function Orders() {
 
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
+  // Marcadores del mapa según rol
+  // Proveedor: ve los pedidos pendientes. Refugio: ve los proveedores.
+  const myLat = isProvider ? profile?.lat : myShelter?.lat
+  const myLng = isProvider ? profile?.lng : myShelter?.lng
+
+  let mapMarkers = []
+  if (isProvider) {
+    mapMarkers = orders.filter(o => o.status === 'pending').map(o => {
+      const s = shelters[o.shelter_id]
+      const lat = o.lat != null ? o.lat : s?.lat
+      const lng = o.lng != null ? o.lng : s?.lng
+      if (lat == null) return null
+      const resumen = o.order_type === 'insumos'
+        ? `${(o.items || []).length} insumos` : `${o.people} personas · ${(o.meals || []).join(', ')}`
+      return { lat, lng, title: s?.name || 'Refugio', subtitle: resumen }
+    }).filter(Boolean)
+  } else if (isShelter) {
+    mapMarkers = providers.filter(p => p.lat != null).map(p => ({
+      lat: p.lat, lng: p.lng, title: p.name,
+      subtitle: `${p.provider_type || 'Proveedor'}${p.phone ? ' · ' + p.phone : ''}`,
+    }))
+  }
+
   return (
     <div className="content">
       {/* Hero solo para visitantes no autenticados */}
@@ -190,6 +223,23 @@ export default function Orders() {
             {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
           </div>
 
+          {/* Pestañas Lista | Mapa */}
+          <div className="view-tabs">
+            <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Lista</button>
+            <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+          </div>
+
+          {view === 'mapa' ? (
+            <div className="card" style={{ padding: 16 }}>
+              <div className="card-sub" style={{ marginBottom: 12 }}>
+                {isProvider
+                  ? 'Pedidos pendientes en el mapa. El punto azul eres tú.'
+                  : 'Proveedores disponibles en el mapa. El punto azul eres tú.'}
+              </div>
+              <OrdersMap center={{ lat: myLat, lng: myLng }} markers={mapMarkers} />
+            </div>
+          ) : (
+          <>
           <div className="stats-row">
             <div className="stat-card"><div className="stat-num" style={{ color: 'var(--warning)' }}>{stats.pending}</div><div className="stat-label">Pendientes</div></div>
             <div className="stat-card"><div className="stat-num" style={{ color: 'var(--accent)' }}>{stats.progress}</div><div className="stat-label">En progreso</div></div>
@@ -220,6 +270,8 @@ export default function Orders() {
               <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
                 onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
             ))
+          )}
+          </>
           )}
         </>
       )}

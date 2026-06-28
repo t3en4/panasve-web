@@ -4,6 +4,7 @@ import { supabase, parseCoords } from '../lib/supabase'
 import { REGLAS_ORO, REGLAS_ORO_NOTA } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
+import CoordsHelp from '../components/CoordsHelp'
 
 const MEALS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena']
 const MAX_ITEMS = 20
@@ -226,7 +227,7 @@ export default function NewOrder() {
         <div className="form-grid">
           <div className="field full"><label>Dirección de entrega</label>
             <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="Ej: La Guaira, Vargas" /></div>
-          <div className="field full"><label>Ubicación en Google Maps</label>
+          <div className="field full"><label>Ubicación en Google Maps <CoordsHelp /></label>
             <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Pega el enlace de Google Maps o coordenadas" />
             <span className="field-hint">Sirve para que los proveedores calculen la distancia.</span></div>
         </div>

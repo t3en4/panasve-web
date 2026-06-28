@@ -438,3 +438,29 @@ table.data tr:last-child td { border-bottom: none; }
 .condimento-tag { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 9px; border-radius: 12px; }
 .condimento-tag.no-usar { background: #cf2e2e; color: #fff; }
 .condimento-tag.cuidado { background: #d8821a; color: #fff; }
+
+/* Pestañas Lista | Mapa */
+.view-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--bg); padding: 4px; border-radius: var(--radius); width: fit-content; }
+.view-tab {
+  padding: 7px 16px; border-radius: 6px; border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 14px; color: var(--text-secondary); transition: all 0.15s;
+}
+.view-tab.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+/* Tooltip de ayuda para coordenadas */
+.coords-help { position: relative; display: inline; }
+.coords-help-btn {
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 12px; color: var(--accent); padding: 0 0 0 6px; text-decoration: underline;
+}
+.coords-help-box {
+  position: absolute; top: 100%; left: 0; z-index: 40; margin-top: 6px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
+  padding: 16px; width: 300px; max-width: 86vw; box-shadow: 0 6px 24px rgba(0,0,0,0.14);
+  font-size: 13px; line-height: 1.55; color: var(--text); font-weight: 400;
+}
+.coords-help-box strong { display: block; margin-bottom: 8px; }
+.coords-help-box ol { margin: 0 0 10px; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.coords-help-box code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.coords-help-close { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); }
+.coords-help-note { background: var(--warning-bg); color: var(--warning); padding: 9px 11px; border-radius: 8px; font-size: 12px; }

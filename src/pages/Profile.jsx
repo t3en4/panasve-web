@@ -3,6 +3,7 @@ import { supabase, parseCoords, distanceKm } from '../lib/supabase'
 import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
+import CoordsHelp from '../components/CoordsHelp'
 import OrdersMap from '../components/OrdersMap'
 import SafetyGuide from '../components/SafetyGuide'
 
@@ -140,7 +141,7 @@ export default function Profile() {
             </select></div>
           <div className="field"><label>Instagram</label>
             <input value={form.instagram} onChange={e => set('instagram', e.target.value)} /></div>
-          <div className="field full"><label>Ubicación en Google Maps</label>
+          <div className="field full"><label>Ubicación en Google Maps <CoordsHelp /></label>
             <input value={form.coords} onChange={e => set('coords', e.target.value)} placeholder="Enlace de Google Maps o coordenadas" />
             <span className="field-hint">Se usa para ordenar los pedidos por cercanía.</span></div>
         </div>

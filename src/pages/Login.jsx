@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, parseCoords, traducirError } from '../lib/supabase'
 import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
 import { useToast } from '../components/Toast'
+import CoordsHelp from '../components/CoordsHelp'
 
 export default function Login() {
   const toast = useToast()
@@ -207,7 +208,7 @@ export default function Login() {
                 </select></div>
               <div className="field"><label>Instagram</label>
                 <input value={reg.instagram} onChange={e => setR('instagram', e.target.value)} placeholder="@perfil" /></div>
-              <div className="field full"><label>Ubicación en Google Maps</label>
+              <div className="field full"><label>Ubicación en Google Maps <CoordsHelp /></label>
                 <input value={reg.coords} onChange={e => setR('coords', e.target.value)} placeholder="Pega el enlace de Google Maps o coordenadas" />
                 <span className="field-hint">Sirve para ordenar los pedidos por cercanía.</span></div>
             </div>
