@@ -4,6 +4,7 @@ import { ESTADOS, PROVIDER_TYPES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import OrdersMap from '../components/OrdersMap'
+import SafetyGuide from '../components/SafetyGuide'
 
 export default function Profile() {
   const { profile, shelter, isShelter, isProvider, refreshProfile } = useAuth()
@@ -145,6 +146,11 @@ export default function Profile() {
         <button className="btn primary" onClick={save} disabled={saving}>
           {saving ? 'Guardando…' : 'Guardar cambios'}
         </button>
+      </div>
+
+      {/* Guía de seguridad alimentaria (educativa) */}
+      <div style={{ maxWidth: 620 }}>
+        <SafetyGuide />
       </div>
 
       {isProvider && (

@@ -28,3 +28,29 @@ export const REGLAS_ORO = [
 ]
 export const REGLAS_ORO_NOTA =
   'Si un lote ya pasó su tiempo límite, es más seguro descartarlo que arriesgarse a entregarlo.'
+
+// Contenido educativo de seguridad alimentaria (para perfiles)
+export const SEGURIDAD_ALIMENTARIA = {
+  peligro: {
+    titulo: 'La espera es el peligro',
+    parrafos: [
+      'La comida donada viaja, espera en puntos de acopio y se reparte poco a poco. Eso puede significar 3, 5 u 8 horas sin refrigeración, muchas veces bajo calor.',
+      'Entre 5°C y 60°C las bacterias se multiplican rápido. Pasado ese tiempo límite, el riesgo de enfermar a quien recibe la ayuda sube fuerte — sin importar qué tan bien haya quedado la comida al cocinarla.',
+    ],
+    nota: 'Zona de peligro: más de 2 horas entre 5°C y 60°C (1 hora con mucho calor) = riesgo alto.',
+  },
+  condimentos: [
+    {
+      nivel: 'no-usar',
+      nombre: 'Mayonesa',
+      etiqueta: 'No usar',
+      texto: 'Mezclada en sándwiches, hamburguesas o ensaladas, crea un ambiente ideal para bacterias como Staphylococcus aureus o Salmonella, sobre todo si pasa horas fuera de refrigeración. Una vez mezclada, el reloj corre rápido aunque se traslade en cavas.',
+    },
+    {
+      nivel: 'cuidado',
+      nombre: 'Ketchup',
+      etiqueta: 'Con cuidado',
+      texto: 'Es más ácido que la mayonesa, así que controla mejor a las bacterias. Pero igual puede fermentar, perder sabor o separarse con el calor. Mejor en sobres individuales sellados, aparte de la comida, para que cada persona se lo agregue antes de comer.',
+    },
+  ],
+}
