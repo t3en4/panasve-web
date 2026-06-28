@@ -478,3 +478,24 @@ table.data tr:last-child td { border-bottom: none; }
 
 /* Fuente de la guía de seguridad */
 .safety-fuente { margin-top: 6px; font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+/* Dashboard de admin */
+.dash { display: flex; flex-direction: column; gap: 8px; }
+.dash-h { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin: 18px 0 4px; }
+.dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; text-align: center; }
+.dash-num { font-size: 30px; font-weight: 700; color: var(--text); }
+.dash-label { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Barras horizontales */
+.dash-bars { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.dash-bar-row { display: flex; align-items: center; gap: 12px; }
+.dash-bar-label { width: 110px; font-size: 13px; color: var(--text); flex-shrink: 0; }
+.dash-bar-track { flex: 1; height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.dash-bar-fill { height: 100%; background: var(--accent); border-radius: 6px; min-width: 4px; }
+.dash-bar-val { width: 36px; text-align: right; font-size: 13px; font-weight: 600; color: var(--text); }
+
+@media (max-width: 640px) {
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-num { font-size: 24px; }
+}

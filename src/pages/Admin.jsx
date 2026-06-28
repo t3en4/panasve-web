@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { providerTypeLabel } from '../lib/constants'
 
 export default function Admin() {
   const { isAdmin } = useAuth()
   const [rows, setRows] = useState([])
   const [providers, setProviders] = useState([])
+  const [shelters, setShelters] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('orders')
+  const [tab, setTab] = useState('dashboard')
 
   useEffect(() => {
     async function load() {
-      const [{ data: o }, { data: p }] = await Promise.all([
+      const [{ data: o }, { data: p }, { data: s }] = await Promise.all([
         supabase.from('orders_full').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles').select('*').eq('role', 'provider').order('created_at', { ascending: false }),
+        supabase.from('shelters').select('*').order('created_at', { ascending: false }),
       ])
       setRows(o || [])
       setProviders(p || [])
+      setShelters(s || [])
       setLoading(false)
     }
     load()
@@ -24,23 +28,140 @@ export default function Admin() {
 
   if (!isAdmin) return <div className="content"><div className="empty-state">Acceso solo para administradores.</div></div>
 
-  const statusLabel = { pending: 'Pendiente', progress: 'En progreso', done: 'Entregado' }
+  const statusLabel = { pending: 'Pendiente', progress: 'En progreso', done: 'Entregado', cancelled: 'Cancelado' }
+
+  // ---- Métricas para el dashboard ----
+  const now = new Date()
+  const hace24h = new Date(now.getTime() - 24 * 3600 * 1000)
+  const hace7d = new Date(now.getTime() - 7 * 24 * 3600 * 1000)
+
+  const ordersByStatus = {
+    pending: rows.filter(r => r.status === 'pending').length,
+    progress: rows.filter(r => r.status === 'progress').length,
+    done: rows.filter(r => r.status === 'done').length,
+    cancelled: rows.filter(r => r.status === 'cancelled').length,
+  }
+  const ordersByType = {
+    comida: rows.filter(r => r.order_type === 'comida').length,
+    insumos: rows.filter(r => r.order_type === 'insumos').length,
+  }
+  const ordersRecientes = {
+    h24: rows.filter(r => new Date(r.created_at) >= hace24h).length,
+    d7: rows.filter(r => new Date(r.created_at) >= hace7d).length,
+  }
+  const cuentasRecientes = {
+    refugios24: shelters.filter(s => new Date(s.created_at) >= hace24h).length,
+    refugios7: shelters.filter(s => new Date(s.created_at) >= hace7d).length,
+    prov24: providers.filter(p => new Date(p.created_at) >= hace24h).length,
+    prov7: providers.filter(p => new Date(p.created_at) >= hace7d).length,
+  }
+  // Proveedores por tipo
+  const provPorTipo = {}
+  providers.forEach(p => {
+    const t = p.provider_type || 'otro'
+    provPorTipo[t] = (provPorTipo[t] || 0) + 1
+  })
+  // Cuentas por estado (refugios + proveedores)
+  const porEstado = {}
+  shelters.forEach(s => { if (s.estado) { porEstado[s.estado] = porEstado[s.estado] || { ref: 0, prov: 0 }; porEstado[s.estado].ref++ } })
+  providers.forEach(p => { if (p.estado) { porEstado[p.estado] = porEstado[p.estado] || { ref: 0, prov: 0 }; porEstado[p.estado].prov++ } })
+  const estadosOrdenados = Object.entries(porEstado).sort((a, b) => (b[1].ref + b[1].prov) - (a[1].ref + a[1].prov))
+
+  // Comidas servidas (personas en pedidos de comida entregados)
+  const comidasServidas = rows
+    .filter(r => r.status === 'done' && r.order_type === 'comida')
+    .reduce((sum, r) => sum + (r.people || 0), 0)
+
+  const Stat = ({ num, label, color }) => (
+    <div className="dash-card">
+      <div className="dash-num" style={color ? { color } : undefined}>{Number(num).toLocaleString('es-VE')}</div>
+      <div className="dash-label">{label}</div>
+    </div>
+  )
 
   return (
     <div className="content">
       <div className="section-header"><div className="section-title">Panel de administración</div></div>
 
       <div className="filter-row">
+        <button className={`btn sm ${tab === 'dashboard' ? 'accent' : ''}`} onClick={() => setTab('dashboard')}>Dashboard</button>
         <button className={`btn sm ${tab === 'orders' ? 'accent' : ''}`} onClick={() => setTab('orders')}>Pedidos ({rows.length})</button>
         <button className={`btn sm ${tab === 'providers' ? 'accent' : ''}`} onClick={() => setTab('providers')}>Proveedores ({providers.length})</button>
+        <button className={`btn sm ${tab === 'shelters' ? 'accent' : ''}`} onClick={() => setTab('shelters')}>Refugios ({shelters.length})</button>
       </div>
 
-      {loading ? <div className="loading">Cargando…</div> : tab === 'orders' ? (
+      {loading ? <div className="loading">Cargando…</div> : tab === 'dashboard' ? (
+        <div className="dash">
+          {/* Resumen general */}
+          <h3 className="dash-h">Resumen general</h3>
+          <div className="dash-grid">
+            <Stat num={shelters.length} label="Refugios" color="var(--success)" />
+            <Stat num={providers.length} label="Proveedores" color="var(--accent)" />
+            <Stat num={rows.length} label="Pedidos totales" />
+            <Stat num={comidasServidas} label="Comidas servidas" color="var(--accent)" />
+          </div>
+
+          {/* Pedidos por estado */}
+          <h3 className="dash-h">Pedidos por estado</h3>
+          <div className="dash-grid">
+            <Stat num={ordersByStatus.pending} label="Pendientes" color="var(--warning)" />
+            <Stat num={ordersByStatus.progress} label="En progreso" color="var(--accent)" />
+            <Stat num={ordersByStatus.done} label="Entregados" color="var(--success)" />
+            <Stat num={ordersByStatus.cancelled} label="Cancelados" color="var(--danger)" />
+          </div>
+
+          {/* Pedidos por tipo */}
+          <h3 className="dash-h">Pedidos por tipo</h3>
+          <div className="dash-grid">
+            <Stat num={ordersByType.comida} label="Comida" />
+            <Stat num={ordersByType.insumos} label="Insumos" />
+          </div>
+
+          {/* Actividad reciente */}
+          <h3 className="dash-h">Actividad reciente</h3>
+          <div className="dash-grid">
+            <Stat num={ordersRecientes.h24} label="Pedidos (24h)" />
+            <Stat num={ordersRecientes.d7} label="Pedidos (7 días)" />
+            <Stat num={cuentasRecientes.refugios24 + cuentasRecientes.prov24} label="Cuentas nuevas (24h)" />
+            <Stat num={cuentasRecientes.refugios7 + cuentasRecientes.prov7} label="Cuentas nuevas (7 días)" />
+          </div>
+
+          {/* Proveedores por tipo */}
+          <h3 className="dash-h">Proveedores por tipo</h3>
+          <div className="dash-bars">
+            {Object.entries(provPorTipo).sort((a, b) => b[1] - a[1]).map(([t, n]) => {
+              const pct = providers.length ? Math.round(n / providers.length * 100) : 0
+              return (
+                <div className="dash-bar-row" key={t}>
+                  <div className="dash-bar-label">{providerTypeLabel(t)}</div>
+                  <div className="dash-bar-track"><div className="dash-bar-fill" style={{ width: `${pct}%` }} /></div>
+                  <div className="dash-bar-val">{n}</div>
+                </div>
+              )
+            })}
+            {providers.length === 0 && <div className="muted">Sin proveedores aún.</div>}
+          </div>
+
+          {/* Cuentas por estado */}
+          <h3 className="dash-h">Cuentas por estado</h3>
+          <div className="table-wrap">
+            <table className="data">
+              <thead><tr><th>Estado</th><th>Refugios</th><th>Proveedores</th><th>Total</th></tr></thead>
+              <tbody>
+                {estadosOrdenados.map(([est, v]) => (
+                  <tr key={est}><td>{est}</td><td>{v.ref}</td><td>{v.prov}</td><td><b>{v.ref + v.prov}</b></td></tr>
+                ))}
+                {estadosOrdenados.length === 0 && <tr><td colSpan="4" className="muted" style={{ textAlign: 'center', padding: 20 }}>Sin datos de estado aún.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : tab === 'orders' ? (
         <div className="table-wrap">
           <table className="data">
             <thead>
               <tr>
-                <th>Estado</th><th>Refugio</th><th>Personas</th><th>Comidas</th>
+                <th>Estado</th><th>Tipo</th><th>Refugio</th><th>Detalle</th>
                 <th>Proveedor</th><th>Creado</th><th>Entregado</th>
               </tr>
             </thead>
@@ -48,9 +169,9 @@ export default function Admin() {
               {rows.map(r => (
                 <tr key={r.id}>
                   <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
-                  <td>{r.shelter_name}<br /><span className="muted">{r.shelter_location}</span></td>
-                  <td>{r.people}</td>
-                  <td>{(r.meals || []).join(', ')}</td>
+                  <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
+                  <td>{r.shelter_name}<br /><span className="muted">{r.shelter_estado || r.shelter_location}</span></td>
+                  <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
                   <td>{r.provider_name || '—'}</td>
                   <td className="muted">{fmtDate(r.created_at)}</td>
                   <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
@@ -60,21 +181,39 @@ export default function Admin() {
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : tab === 'providers' ? (
         <div className="table-wrap">
           <table className="data">
             <thead>
-              <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Instagram</th><th>Registrado</th></tr>
+              <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th></tr>
             </thead>
             <tbody>
               {providers.map(p => (
                 <tr key={p.id}>
-                  <td>{p.name}</td><td>{p.email}</td><td>{p.phone || '—'}</td>
-                  <td>{p.address || '—'}</td><td>{p.instagram || '—'}</td>
+                  <td>{p.name}</td><td>{providerTypeLabel(p.provider_type)}</td><td>{p.estado || '—'}</td>
+                  <td>{p.email}</td><td>{p.phone || '—'}</td><td>{p.instagram || '—'}</td>
                   <td className="muted">{fmtDate(p.created_at)}</td>
                 </tr>
               ))}
-              {providers.length === 0 && <tr><td colSpan="6" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
+              {providers.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr><th>Refugio</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
+            </thead>
+            <tbody>
+              {shelters.map(s => (
+                <tr key={s.id}>
+                  <td>{s.name}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
+                  <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
+                  <td className="muted">{fmtDate(s.created_at)}</td>
+                </tr>
+              ))}
+              {shelters.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
             </tbody>
           </table>
         </div>

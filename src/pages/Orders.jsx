@@ -191,30 +191,19 @@ export default function Orders() {
           o insumos que llegan a quien los necesita.
         </p>
         <div className="hero-stats">
-          <div className="hero-stat">
-            <div className="hero-num">{counts.shelters.toLocaleString('es-VE')}</div>
-            <div className="hero-label">{counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados'}</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-num">{counts.providers.toLocaleString('es-VE')}</div>
-            <div className="hero-label">{counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados'}</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-num">{global.meals.toLocaleString('es-VE')}</div>
-            <div className="hero-label">comidas servidas</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-num">{global.done.toLocaleString('es-VE')}</div>
-            <div className="hero-label">pedidos completados</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-num">{global.active.toLocaleString('es-VE')}</div>
-            <div className="hero-label">pedidos activos</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-num">{global.total.toLocaleString('es-VE')}</div>
-            <div className="hero-label">pedidos en total</div>
-          </div>
+          {[
+            { v: counts.shelters, label: counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados' },
+            { v: counts.providers, label: counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados' },
+            { v: global.meals, label: 'comidas servidas' },
+            { v: global.done, label: 'pedidos completados' },
+            { v: global.active, label: 'pedidos activos' },
+            { v: global.total, label: 'pedidos en total' },
+          ].filter(s => s.v > 0).map((s, i) => (
+            <div className="hero-stat" key={i}>
+              <div className="hero-num">{s.v.toLocaleString('es-VE')}</div>
+              <div className="hero-label">{s.label}</div>
+            </div>
+          ))}
         </div>
         {global.active > 0 && (
           <div className="hero-alert">
