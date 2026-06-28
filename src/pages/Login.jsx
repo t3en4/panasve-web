@@ -6,9 +6,10 @@ import { useToast } from '../components/Toast'
 export default function Login() {
   const toast = useToast()
   const navigate = useNavigate()
-  const [mode, setMode] = useState('login')        // login | choose | register
+  const [mode, setMode] = useState('login')        // login | choose | register | forgot
   const [regRole, setRegRole] = useState(null)     // 'shelter' | 'provider'
   const [busy, setBusy] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
   const [login, setLogin] = useState({ email: '', password: '' })
   const [reg, setReg] = useState({
     name: '', email: '', password: '', phone: '', contact: '', instagram: '',
@@ -25,6 +26,18 @@ export default function Login() {
     if (error) { toast('Email o contraseña incorrectos.', 'error'); return }
     toast('¡Bienvenido de vuelta!')
     navigate('/')
+  }
+
+  async function doReset() {
+    if (!resetEmail) { toast('Ingresa tu correo.', 'error'); return }
+    setBusy(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/recuperar`,
+    })
+    setBusy(false)
+    if (error) { toast(traducirError(error.message), 'error'); return }
+    toast('Si el correo existe, te enviamos un enlace para recuperar tu contraseña.')
+    setMode('login')
   }
 
   async function doRegister() {
@@ -92,11 +105,32 @@ export default function Login() {
             <button className="btn primary" style={{ width: '100%' }} onClick={doLogin} disabled={busy}>
               {busy ? 'Entrando…' : 'Iniciar sesión'}
             </button>
+            <button className="link-btn" style={{ marginTop: 12 }} onClick={() => { setResetEmail(login.email); setMode('forgot') }}>
+              ¿Olvidaste tu contraseña?
+            </button>
             <div className="divider" />
             <div style={{ textAlign: 'center' }} className="muted">¿No tienes cuenta?</div>
             <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('choose')}>
               Crear una cuenta
             </button>
+          </div>
+        )}
+
+        {mode === 'forgot' && (
+          <div className="card">
+            <div style={{ marginBottom: 16 }}>
+              <div className="card-title">Recuperar contraseña</div>
+              <div className="card-sub">Te enviaremos un enlace para crear una nueva contraseña.</div>
+            </div>
+            <div className="field" style={{ marginBottom: 18 }}>
+              <label>Email</label>
+              <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                placeholder="tu@email.com" onKeyDown={e => e.key === 'Enter' && doReset()} />
+            </div>
+            <button className="btn primary" style={{ width: '100%' }} onClick={doReset} disabled={busy}>
+              {busy ? 'Enviando…' : 'Enviar enlace'}
+            </button>
+            <button className="btn" style={{ width: '100%', marginTop: 8 }} onClick={() => setMode('login')}>Volver</button>
           </div>
         )}
 

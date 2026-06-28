@@ -5,6 +5,7 @@ import Nav from './components/Nav'
 import Orders from './pages/Orders'
 import NewOrder from './pages/NewOrder'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
 import Admin from './pages/Admin'
 
@@ -33,6 +34,7 @@ function Shell() {
         <Route path="/nuevo" element={<NewOrder />} />
         <Route path="/editar/:id" element={<NewOrder />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/recuperar" element={<ResetPassword />} />
         <Route path="/perfil" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
