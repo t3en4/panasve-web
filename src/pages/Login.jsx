@@ -48,7 +48,7 @@ export default function Login() {
     if (regRole === 'shelter' && (!reg.location || !reg.phone || !reg.contact || !reg.contact_recv)) {
       toast('Completa dirección, teléfono, persona de contacto y persona que recibe.', 'error'); return
     }
-    if (regRole === 'provider' && !reg.address) { toast('Ingresa la dirección.', 'error'); return }
+    if (regRole === 'provider' && (!reg.address || !reg.phone)) { toast('Ingresa la dirección y el teléfono.', 'error'); return }
     if (!reg.estado) { toast('Selecciona tu estado.', 'error'); return }
 
     setBusy(true)
@@ -199,7 +199,7 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  <div className="field"><label>Teléfono</label>
+                  <div className="field"><label>Teléfono <span className="req">*</span></label>
                     <input value={reg.phone} onChange={e => setR('phone', e.target.value)} placeholder="+58 212 ..." /></div>
                   <div className="field"><label>Persona de contacto</label>
                     <input value={reg.contact} onChange={e => setR('contact', e.target.value)} placeholder="Nombre" /></div>

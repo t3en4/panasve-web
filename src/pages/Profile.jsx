@@ -81,6 +81,11 @@ export default function Profile() {
       toast('Selecciona tu estado.', 'error')
       return
     }
+    // El teléfono es obligatorio para todos
+    if (!form.phone?.trim()) {
+      toast('Ingresa un teléfono de contacto.', 'error')
+      return
+    }
     setSaving(true)
     const { lat, lng } = parseCoords(form.coords)
     let error
@@ -118,7 +123,7 @@ export default function Profile() {
                 {PROVIDER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select></div>
           )}
-          <div className="field"><label>Teléfono{isShelter && <span className="req"> *</span>}</label>
+          <div className="field"><label>Teléfono <span className="req">*</span></label>
             <input value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
           <div className="field"><label>Persona de contacto{isShelter && <span className="req"> *</span>}</label>
             <input value={form.contact} onChange={e => set('contact', e.target.value)} /></div>
