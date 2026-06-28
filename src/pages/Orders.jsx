@@ -225,6 +225,7 @@ export default function Orders() {
         <div className="hero-cta">
           <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
         </div>
+        <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="hero-ig">Síguenos en Instagram · @panasve</a>
       </div>
       )}
 

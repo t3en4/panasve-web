@@ -464,3 +464,17 @@ table.data tr:last-child td { border-bottom: none; }
 .coords-help-box code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 .coords-help-close { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); }
 .coords-help-note { background: var(--warning-bg); color: var(--warning); padding: 9px 11px; border-radius: 8px; font-size: 12px; }
+
+/* Footer con Instagram */
+.site-footer {
+  margin-top: 40px; padding: 28px 20px; background: #1a1a1a; color: rgba(255,255,255,0.7);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font-size: 13px;
+}
+.footer-ig { color: #fff; font-weight: 600; font-size: 15px; }
+.footer-ig:hover { color: var(--gold, #ffcc00); opacity: 1; }
+
+/* Instagram en el hero */
+.hero-ig { display: inline-block; margin-top: 16px; color: var(--accent); font-size: 14px; font-weight: 600; }
+
+/* Fuente de la guía de seguridad */
+.safety-fuente { margin-top: 6px; font-size: 12px; color: var(--text-muted); font-style: italic; }

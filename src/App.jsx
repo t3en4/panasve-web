@@ -40,6 +40,10 @@ function Shell() {
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <footer className="site-footer">
+        <span>PanasVE · Conectamos ayuda con quien la necesita</span>
+        <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="footer-ig">📷 @panasve</a>
+      </footer>
       <Feedback />
     </>
   )

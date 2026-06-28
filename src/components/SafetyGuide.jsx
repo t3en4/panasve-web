@@ -52,6 +52,8 @@ export default function SafetyGuide() {
               </div>
             ))}
           </div>
+
+          <div className="safety-fuente">{SEGURIDAD_ALIMENTARIA.fuente}</div>
         </div>
       )}
     </div>

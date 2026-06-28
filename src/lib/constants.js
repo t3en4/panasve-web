@@ -53,4 +53,5 @@ export const SEGURIDAD_ALIMENTARIA = {
       texto: 'Es más ácido que la mayonesa, así que controla mejor a las bacterias. Pero igual puede fermentar, perder sabor o separarse con el calor. Mejor en sobres individuales sellados, aparte de la comida, para que cada persona se lo agregue antes de comer.',
     },
   ],
+  fuente: 'Fuente: Juan José Hassan Gatas — Instituto Ibero Venezuela',
 }
