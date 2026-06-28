@@ -18,6 +18,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [estadoFilter, setEstadoFilter] = useState('all')
+  const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -38,6 +39,14 @@ export default function Orders() {
     supabase.from('profiles').select('name, provider_type, lat, lng, phone, estado').eq('role', 'provider')
       .then(({ data }) => setProviders(data || []))
   }, [isShelter])
+
+  // Conteo de refugios y proveedores registrados (para el hero del home)
+  useEffect(() => {
+    if (profile) return  // el hero solo lo ven los visitantes
+    supabase.rpc('stats_publicos').then(({ data, error }) => {
+      if (!error && data) setCounts({ shelters: data.shelters || 0, providers: data.providers || 0 })
+    })
+  }, [profile])
 
   useEffect(() => {
     load()
@@ -182,6 +191,14 @@ export default function Orders() {
           o insumos que llegan a quien los necesita.
         </p>
         <div className="hero-stats">
+          <div className="hero-stat">
+            <div className="hero-num">{counts.shelters.toLocaleString('es-VE')}</div>
+            <div className="hero-label">{counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados'}</div>
+          </div>
+          <div className="hero-stat">
+            <div className="hero-num">{counts.providers.toLocaleString('es-VE')}</div>
+            <div className="hero-label">{counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados'}</div>
+          </div>
           <div className="hero-stat">
             <div className="hero-num">{global.meals.toLocaleString('es-VE')}</div>
             <div className="hero-label">comidas servidas</div>
