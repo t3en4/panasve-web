@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './components/Toast'
 import Nav from './components/Nav'
+import Feedback from './components/Feedback'
 import Orders from './pages/Orders'
 import NewOrder from './pages/NewOrder'
 import Login from './pages/Login'
@@ -39,6 +40,7 @@ function Shell() {
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Feedback />
     </>
   )
 }
