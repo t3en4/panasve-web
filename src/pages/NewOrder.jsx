@@ -67,6 +67,11 @@ export default function NewOrder() {
   }
 
   async function submit() {
+    // Salvaguarda: si la cuenta es refugio pero no tiene registro asociado
+    if (!shelter?.id) {
+      toast('Tu cuenta de refugio no está completa. Ve a Mi perfil o contacta al admin.', 'error')
+      return
+    }
     // Validación según tipo
     if (type === 'comida') {
       const people = parseInt(form.people)
