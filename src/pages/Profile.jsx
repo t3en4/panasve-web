@@ -63,10 +63,19 @@ export default function Profile() {
   async function save() {
     // Campos obligatorios para refugios
     if (isShelter) {
+      if (!shelter?.id) {
+        toast('Tu cuenta de refugio no está completa. Cierra sesión y vuelve a entrar; si persiste, contacta al admin.', 'error')
+        return
+      }
       if (!form.location?.trim() || !form.phone?.trim() || !form.contact?.trim() || !form.contact_recv?.trim()) {
         toast('Completa dirección, teléfono, persona de contacto y persona que recibe.', 'error')
         return
       }
+    }
+    // El estado es obligatorio para todos
+    if (!form.estado) {
+      toast('Selecciona tu estado.', 'error')
+      return
     }
     setSaving(true)
     const { lat, lng } = parseCoords(form.coords)
@@ -121,7 +130,7 @@ export default function Profile() {
             <div className="field full"><label>Dirección</label>
               <input value={form.address} onChange={e => set('address', e.target.value)} /></div>
           )}
-          <div className="field"><label>Estado</label>
+          <div className="field"><label>Estado <span className="req">*</span></label>
             <select value={form.estado} onChange={e => set('estado', e.target.value)}>
               <option value="">Selecciona…</option>
               {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
