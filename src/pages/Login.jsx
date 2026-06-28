@@ -79,7 +79,10 @@ export default function Login() {
       // Enviar correo de bienvenida (no bloquea el registro si falla)
       supabase.functions.invoke('welcome-email', {
         body: { email: reg.email, name: reg.name, role: regRole },
-      }).catch(() => {})
+      }).then(({ data, error }) => {
+        if (error) console.error('welcome-email error:', error)
+        else console.log('welcome-email ok:', data)
+      }).catch(e => console.error('welcome-email exception:', e))
     }
     setBusy(false)
 
