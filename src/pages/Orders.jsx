@@ -130,7 +130,8 @@ export default function Orders() {
 
   return (
     <div className="content">
-      {/* Hero con misión + impacto global */}
+      {/* Hero solo para visitantes no autenticados */}
+      {!profile && (
       <div className="hero">
         <div className="hero-flag" aria-hidden="true">🇻🇪</div>
         <h1 className="hero-title">Una mesa más, una mano más</h1>
@@ -157,20 +158,17 @@ export default function Orders() {
             <div className="hero-label">pedidos en total</div>
           </div>
         </div>
-        {!profile && (
-          <>
-            {global.active > 0 && (
-              <div className="hero-alert">
-                <span className="hero-alert-pulse" aria-hidden="true" />
-                Hay <strong>&nbsp;{global.active}&nbsp;</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo
-              </div>
-            )}
-            <div className="hero-cta">
-              <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
-            </div>
-          </>
+        {global.active > 0 && (
+          <div className="hero-alert">
+            <span className="hero-alert-pulse" aria-hidden="true" />
+            Hay <strong>&nbsp;{global.active}&nbsp;</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo
+          </div>
         )}
+        <div className="hero-cta">
+          <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
+        </div>
       </div>
+      )}
 
       {profile && (
         <>
