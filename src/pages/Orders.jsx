@@ -112,6 +112,16 @@ export default function Orders() {
     done: base.filter(o => o.status === 'done').length,
   }
 
+  // Stats globales de toda la plataforma (para el hero)
+  const global = {
+    total: orders.filter(o => o.status !== 'cancelled').length,
+    done: orders.filter(o => o.status === 'done').length,
+    active: orders.filter(o => o.status === 'pending' || o.status === 'progress').length,
+    meals: orders
+      .filter(o => o.status === 'done' && o.order_type === 'comida')
+      .reduce((sum, o) => sum + (o.people || 0), 0),
+  }
+
   const filters = isShelter
     ? [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']]
     : [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados']]
@@ -120,6 +130,40 @@ export default function Orders() {
 
   return (
     <div className="content">
+      {/* Hero con misión + impacto global */}
+      <div className="hero">
+        <div className="hero-flag" aria-hidden="true">🇻🇪</div>
+        <h1 className="hero-title">Una mesa más, una mano más</h1>
+        <p className="hero-text">
+          PanasVE conecta a refugios y familias afectadas por los terremotos con
+          restaurantes, chefs y proveedores dispuestos a ayudar. Cada pedido es comida
+          o insumos que llegan a quien los necesita.
+        </p>
+        <div className="hero-stats">
+          <div className="hero-stat">
+            <div className="hero-num">{global.meals.toLocaleString('es-VE')}</div>
+            <div className="hero-label">comidas servidas</div>
+          </div>
+          <div className="hero-stat">
+            <div className="hero-num">{global.done.toLocaleString('es-VE')}</div>
+            <div className="hero-label">pedidos completados</div>
+          </div>
+          <div className="hero-stat">
+            <div className="hero-num">{global.active.toLocaleString('es-VE')}</div>
+            <div className="hero-label">pedidos activos</div>
+          </div>
+          <div className="hero-stat">
+            <div className="hero-num">{global.total.toLocaleString('es-VE')}</div>
+            <div className="hero-label">pedidos en total</div>
+          </div>
+        </div>
+        {!profile && (
+          <div className="hero-cta">
+            <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
+          </div>
+        )}
+      </div>
+
       <div className="section-header">
         <div>
           <div className="section-title">{title}</div>
@@ -129,7 +173,6 @@ export default function Orders() {
           {!profile && <div className="muted">Inicia sesión para tomar o publicar pedidos.</div>}
         </div>
         {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
-        {!profile && <button className="btn primary" onClick={() => navigate('/login')}>Iniciar sesión</button>}
       </div>
 
       <div className="stats-row">
