@@ -183,7 +183,7 @@ export default function Orders() {
       {/* Hero solo para visitantes no autenticados */}
       {!profile && (
       <div className="hero">
-        <div className="hero-flag" aria-hidden="true">🇻🇪</div>
+        <img src="/logo.png" alt="PanasVE" className="hero-logo" />
         <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
         <p className="hero-text">
           PanasVE conecta a refugios y familias afectadas por los terremotos con
