@@ -184,7 +184,7 @@ export default function Orders() {
       {!profile && (
       <div className="hero">
         <div className="hero-flag" aria-hidden="true">🇻🇪</div>
-        <h1 className="hero-title">Una mesa más, una mano más</h1>
+        <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
         <p className="hero-text">
           PanasVE conecta a refugios y familias afectadas por los terremotos con
           restaurantes, chefs y proveedores dispuestos a ayudar. Cada pedido es comida

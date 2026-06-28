@@ -76,6 +76,10 @@ export default function Login() {
           provider_type: reg.provider_type, lat, lng,
         }).eq('id', data.user.id)
       }
+      // Enviar correo de bienvenida (no bloquea el registro si falla)
+      supabase.functions.invoke('welcome-email', {
+        body: { email: reg.email, name: reg.name, role: regRole },
+      }).catch(() => {})
     }
     setBusy(false)
 
