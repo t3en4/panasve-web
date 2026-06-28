@@ -279,8 +279,9 @@ table.data tr:last-child td { border-bottom: none; }
 .hero-flag { font-size: 38px; line-height: 1; margin-bottom: 12px; }
 .hero-title { font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.01em; }
 .hero-text { font-size: 15px; color: var(--text-secondary); max-width: 540px; margin: 0 auto 24px; line-height: 1.65; }
-.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 580px; margin: 0 auto; }
-@media (max-width: 600px) { .hero-stats { grid-template-columns: repeat(2, 1fr); } .hero-title { font-size: 22px; } }
+.hero-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 28px; max-width: 580px; margin: 0 auto; }
+.hero-stat { min-width: 120px; }
+@media (max-width: 600px) { .hero-stats { gap: 14px 20px; } .hero-title { font-size: 22px; } }
 .hero-stat { background: var(--surface); border-radius: 12px; padding: 14px 8px; border: 1px solid var(--border); }
 .hero-num { font-size: 24px; font-weight: 700; color: var(--red); line-height: 1; }
 .hero-label { font-size: 11.5px; color: var(--text-secondary); margin-top: 5px; }
