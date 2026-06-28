@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, parseCoords } from '../lib/supabase'
+import { supabase, parseCoords, traducirError } from '../lib/supabase'
 import { useToast } from '../components/Toast'
 
 export default function Login() {
@@ -41,7 +41,7 @@ export default function Login() {
       password: reg.password,
       options: { data: { name: reg.name, role: regRole } },
     })
-    if (error) { setBusy(false); toast(error.message || 'No se pudo crear la cuenta.', 'error'); return }
+    if (error) { setBusy(false); toast(traducirError(error.message), 'error'); return }
 
     const { lat, lng } = parseCoords(reg.coords)
     if (data.user) {

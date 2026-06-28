@@ -58,3 +58,24 @@ export function fmtDate(iso) {
   const d = new Date(iso)
   return d.toLocaleDateString('es-VE') + ' ' + d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
 }
+
+// Traduce los errores comunes de Supabase al español
+export function traducirError(msg) {
+  if (!msg) return 'Ocurrió un error. Intenta de nuevo.'
+  const m = msg.toLowerCase()
+  if (m.includes('user already registered') || m.includes('already been registered'))
+    return 'Ya existe una cuenta con ese correo. Inicia sesión.'
+  if (m.includes('invalid login credentials'))
+    return 'Email o contraseña incorrectos.'
+  if (m.includes('email rate limit') || m.includes('rate limit'))
+    return 'Demasiados intentos seguidos. Espera unos minutos e intenta de nuevo.'
+  if (m.includes('password should be at least'))
+    return 'La contraseña debe tener al menos 6 caracteres.'
+  if (m.includes('unable to validate email') || m.includes('invalid email'))
+    return 'El correo no es válido.'
+  if (m.includes('email not confirmed'))
+    return 'Debes confirmar tu correo antes de entrar.'
+  if (m.includes('signups not allowed') || m.includes('signup is disabled'))
+    return 'El registro está deshabilitado temporalmente.'
+  return 'Ocurrió un error. Intenta de nuevo.'
+}

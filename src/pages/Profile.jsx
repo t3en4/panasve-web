@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase, parseCoords } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
@@ -11,15 +11,24 @@ export default function Profile() {
   // Origen de datos según rol
   const src = isShelter ? shelter : profile
   const [form, setForm] = useState({
-    name: src?.name || '',
-    phone: src?.phone || '',
-    contact: src?.contact || '',
-    contact_recv: shelter?.contact_recv || '',
-    instagram: src?.instagram || '',
-    address: profile?.address || '',
-    location: shelter?.location || '',
-    coords: src?.lat != null ? `${src.lat},${src.lng}` : '',
+    name: '', phone: '', contact: '', contact_recv: '',
+    instagram: '', address: '', location: '', coords: '',
   })
+
+  // Rellenar el formulario cuando los datos del usuario terminan de cargar
+  useEffect(() => {
+    if (!src) return
+    setForm({
+      name: src.name || '',
+      phone: src.phone || '',
+      contact: src.contact || '',
+      contact_recv: shelter?.contact_recv || '',
+      instagram: src.instagram || '',
+      address: profile?.address || '',
+      location: shelter?.location || '',
+      coords: src.lat != null ? `${src.lat},${src.lng}` : '',
+    })
+  }, [src, shelter, profile])
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
