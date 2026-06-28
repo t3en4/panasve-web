@@ -301,13 +301,19 @@ table.data tr:last-child td { border-bottom: none; }
 /* Banner de alerta de pedidos pendientes en el hero */
 .hero-alert {
   display: inline-flex; align-items: center; justify-content: center;
-  margin: 4px auto 0; padding: 9px 18px; background: var(--warning-bg);
+  margin: 4px auto 0; padding: 11px 20px; background: var(--warning-bg);
   color: var(--warning); border-radius: 24px; font-size: 14px; font-weight: 500;
 }
+.hero-alert-link {
+  border: none; cursor: pointer; font-family: inherit; text-align: left;
+  transition: all 0.18s ease; max-width: 480px;
+}
+.hero-alert-link:hover { background: #f6e6c4; transform: translateY(-1px); box-shadow: var(--shadow); }
 .hero-alert strong { font-weight: 700; }
+.hero-alert-cta { display: block; margin-top: 2px; color: var(--accent-deep); font-weight: 600; font-size: 13.5px; }
 .hero-alert-pulse {
   width: 9px; height: 9px; border-radius: 50%; background: #d8821a;
-  margin-right: 9px; flex-shrink: 0; animation: pulse 1.6s ease-out infinite;
+  margin-right: 11px; flex-shrink: 0; animation: pulse 1.6s ease-out infinite; align-self: flex-start; margin-top: 5px;
 }
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(216, 130, 26, 0.5); }
@@ -516,10 +522,10 @@ table.data tr:last-child td { border-bottom: none; }
 .hero-logo { width: 116px; height: 116px; border-radius: 50%; margin: 0 auto 20px; display: block; box-shadow: 0 8px 24px rgba(31, 61, 47, 0.18); }
 @media (max-width: 600px) { .hero-logo { width: 88px; height: 88px; } }
 
-/* Mapa de pedidos en el home (visitantes) */
-.home-map-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; box-shadow: var(--shadow); }
-.home-map-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-.home-map-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--accent-deep); }
-.home-map-legend { display: flex; gap: 14px; flex-wrap: wrap; }
-.home-map-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
-.home-map-legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+/* Mapa protagonista dentro del hero (visitantes) */
+.hero-map { margin: 24px auto 8px; max-width: 760px; }
+.hero-map .orders-map { height: 340px; border-radius: var(--radius); border: 1px solid var(--border); }
+.hero-map-legend { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.hero-map-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+.hero-map-legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+@media (max-width: 600px) { .hero-map .orders-map { height: 260px; } }

@@ -200,16 +200,28 @@ export default function Orders() {
 
   return (
     <div className="content">
-      {/* Hero solo para visitantes no autenticados */}
+      {/* Hero solo para visitantes no autenticados — mapa protagonista */}
       {!profile && (
       <div className="hero">
         <img src="/logo.png" alt="PanasVE" className="hero-logo" />
         <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
         <p className="hero-text">
           PanasVE conecta a refugios y familias afectadas por los terremotos con
-          restaurantes, chefs y proveedores dispuestos a ayudar. Cada pedido es comida
-          o insumos que llegan a quien los necesita.
+          restaurantes, chefs y proveedores dispuestos a ayudar.
         </p>
+
+        {/* Mapa de pedidos — protagonista */}
+        {homeMarkers.length > 0 && (
+          <div className="hero-map">
+            <div className="hero-map-legend">
+              <span><i style={{ background: '#c2703d' }} /> Pendiente</span>
+              <span><i style={{ background: '#d9a213' }} /> En progreso</span>
+              <span><i style={{ background: '#3c6e54' }} /> Entregado</span>
+            </div>
+            <OrdersMap markers={homeMarkers} showSelf={false} />
+          </div>
+        )}
+
         <div className="hero-stats">
           {[
             { v: counts.shelters, label: counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados' },
@@ -226,31 +238,19 @@ export default function Orders() {
           ))}
         </div>
         {global.active > 0 && (
-          <div className="hero-alert">
+          <button className="hero-alert hero-alert-link" onClick={() => navigate('/login')}>
             <span className="hero-alert-pulse" aria-hidden="true" />
-            Hay <strong>&nbsp;{global.active}&nbsp;</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo
-          </div>
+            <span>
+              Hay <strong>{global.active}</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo.
+              <span className="hero-alert-cta">Inicia sesión o regístrate para ayudar →</span>
+            </span>
+          </button>
         )}
         <div className="hero-cta">
           <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
         </div>
         <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="hero-ig">Síguenos en Instagram · @panasve</a>
       </div>
-      )}
-
-      {/* Mapa de pedidos para visitantes */}
-      {!profile && homeMarkers.length > 0 && (
-        <div className="home-map-card">
-          <div className="home-map-head">
-            <h2 className="home-map-title">Pedidos en el mapa</h2>
-            <div className="home-map-legend">
-              <span><i style={{ background: '#c2703d' }} /> Pendiente</span>
-              <span><i style={{ background: '#d9a213' }} /> En progreso</span>
-              <span><i style={{ background: '#3c6e54' }} /> Entregado</span>
-            </div>
-          </div>
-          <OrdersMap markers={homeMarkers} showSelf={false} />
-        </div>
       )}
 
       {profile && (
