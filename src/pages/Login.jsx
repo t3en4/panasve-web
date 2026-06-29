@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, parseCoords, traducirError } from '../lib/supabase'
 import { ESTADOS, PROVIDER_TYPES, SHELTER_TYPES } from '../lib/constants'
 import { useToast } from '../components/Toast'
@@ -8,6 +8,8 @@ import CoordsHelp from '../components/CoordsHelp'
 export default function Login() {
   const toast = useToast()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const next = searchParams.get('next') || '/'
   const [mode, setMode] = useState('login')        // login | choose | register | forgot
   const [regRole, setRegRole] = useState(null)     // 'shelter' | 'provider'
   const [busy, setBusy] = useState(false)
@@ -27,7 +29,7 @@ export default function Login() {
     setBusy(false)
     if (error) { toast('Email o contraseña incorrectos.', 'error'); return }
     toast('¡Bienvenido de vuelta!')
-    navigate('/')
+    navigate(next)
   }
 
   async function doReset() {
@@ -91,7 +93,7 @@ export default function Login() {
       setMode('login'); return
     }
     toast('¡Cuenta creada! Bienvenido a PanasVE.')
-    navigate('/')
+    navigate(next)
   }
 
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, fmtDate, distanceKm } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from './Toast'
 
 const STATUS = {
   pending: { label: 'Pendiente', cls: 'pending' },
@@ -13,9 +14,25 @@ const STATUS = {
 export default function OrderCard({ order, shelter, onClaim, onDeliver, onRelease, onCancel, busy }) {
   const { profile, shelter: myShelter, isShelter } = useAuth()
   const navigate = useNavigate()
+  const toast = useToast()
   const st = STATUS[order.status] || STATUS.pending
   const mine = profile && order.claimed_by === profile.id
   const ownShelter = isShelter && myShelter && order.shelter_id === myShelter.id
+
+  async function compartir() {
+    const url = `${window.location.origin}/pedido/${order.id}`
+    const titulo = `Pedido en PanasVE — ${shelter?.name || ''}`.trim()
+    // Usa el menú nativo de compartir en móvil si está disponible
+    if (navigator.share) {
+      try { await navigator.share({ title: titulo, url }); return } catch { /* cancelado */ }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast('Enlace copiado. ¡Compártelo con quien pueda ayudar!')
+    } catch {
+      toast('Copia este enlace: ' + url)
+    }
+  }
 
   const [expanded, setExpanded] = useState(false)
   const [history, setHistory] = useState(null)
@@ -146,6 +163,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
                   <button className="btn sm danger-btn" disabled={busy} onClick={() => onCancel(order)}>Cancelar pedido</button>
                 </>
               )}
+              <button className="btn sm" onClick={compartir}>🔗 Compartir</button>
             </div>
           )}
         </div>

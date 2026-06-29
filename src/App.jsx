@@ -5,6 +5,7 @@ import { ToastProvider } from './components/Toast'
 import Nav from './components/Nav'
 import Feedback from './components/Feedback'
 import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
 import NewOrder from './pages/NewOrder'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
@@ -33,6 +34,7 @@ function Shell() {
       <Nav />
       <Routes>
         <Route path="/" element={<Orders />} />
+        <Route path="/pedido/:id" element={<OrderDetail />} />
         <Route path="/nuevo" element={<NewOrder />} />
         <Route path="/editar/:id" element={<NewOrder />} />
         <Route path="/login" element={<Login />} />
