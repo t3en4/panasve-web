@@ -533,6 +533,7 @@ table.data tr:last-child td { border-bottom: none; }
 /* Formulario de mensajes del admin */
 .msg-form { display: flex; flex-direction: column; gap: 14px; }
 .msg-row { display: grid; grid-template-columns: 200px 1fr; gap: 14px; }
-.msg-form .field { display: flex; flex-direction: column; gap: 6px; }
+.msg-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.msg-form select, .msg-form input, .msg-form textarea { width: 100%; max-width: 100%; box-sizing: border-box; }
 .msg-form textarea { resize: vertical; }
 @media (max-width: 560px) { .msg-row { grid-template-columns: 1fr; } }
