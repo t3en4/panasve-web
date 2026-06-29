@@ -9,7 +9,7 @@ import OrdersMap from '../components/OrdersMap'
 import ShelterGroup from '../components/ShelterGroup'
 
 export default function Orders() {
-  const { profile, shelter: myShelter, isShelter, isProvider } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -56,13 +56,13 @@ export default function Orders() {
     setMisPedidos(data || [])
   }, [profile?.id])
 
-  // Resumen de refugios con pedidos activos (vista de proveedor, agrupado)
+  // Resumen de refugios con pedidos activos (vista agrupada: proveedor o admin)
   useEffect(() => {
-    if (!isProvider) return
+    if (!isProvider && !isAdmin) return
     supabase.rpc('refugios_con_pedidos_activos').then(({ data }) => {
       setResumenRefugios(data || [])
     })
-  }, [isProvider])
+  }, [isProvider, isAdmin])
 
   // Conteo de refugios y proveedores registrados (para el hero del home)
   useEffect(() => {
@@ -180,9 +180,10 @@ export default function Orders() {
     ? [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']]
     : [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados']]
 
+  const agrupado = isProvider || isAdmin   // vista agrupada por refugio
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
-  // Resumen de refugios para proveedores: filtrar por estado y ordenar por cercanía
+  // Resumen de refugios (agrupado): filtrar por estado y ordenar por cercanía (proveedor)
   let resumenList = resumenRefugios
   if (estadoFilter !== 'all') resumenList = resumenList.filter(r => r.estado === estadoFilter)
   if (isProvider && profile?.lat != null) {
@@ -373,8 +374,8 @@ export default function Orders() {
             )}
           </div>
 
-          {/* Filtro comida / insumos (solo proveedor, vista agrupada) */}
-          {isProvider && (
+          {/* Filtro comida / insumos (vista agrupada: proveedor o admin) */}
+          {agrupado && (
             <div className="filter-row">
               {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
                 <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
@@ -384,8 +385,8 @@ export default function Orders() {
 
           {loading ? (
             <div className="loading">Cargando pedidos…</div>
-          ) : isProvider ? (
-            /* Vista de proveedor: refugios agrupados, colapsables, carga diferida */
+          ) : agrupado ? (
+            /* Vista agrupada: refugios colapsables, carga diferida */
             resumenList.length === 0 ? (
               <div className="empty-state">
                 <span className="icon">📋</span>
