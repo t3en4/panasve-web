@@ -252,6 +252,22 @@ function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
 
 function AdminShelterRow({ grupo, statusLabel }) {
   const [open, setOpen] = useState(false)
+  const toast = useToast()
+
+  async function compartirPedido(id, nombre) {
+    const url = `${window.location.origin}/pedido/${id}`
+    const titulo = `Pedido en PanasVE — ${nombre || ''}`.trim()
+    if (navigator.share) {
+      try { await navigator.share({ title: titulo, url }); return } catch { /* cancelado */ }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast('Enlace copiado. ¡Compártelo con quien pueda ayudar!', 'success')
+    } catch {
+      toast('Copia este enlace: ' + url)
+    }
+  }
+
   return (
     <div className={`shelter-group ${open ? 'open' : ''}`}>
       <button className="shelter-group-head" onClick={() => setOpen(o => !o)}>
@@ -267,7 +283,7 @@ function AdminShelterRow({ grupo, statusLabel }) {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Estado</th><th>Tipo</th><th>Detalle</th><th>Proveedor</th><th>Creado</th><th>Entregado</th></tr>
+                <tr><th>Estado</th><th>Tipo</th><th>Detalle</th><th>Proveedor</th><th>Creado</th><th>Entregado</th><th>Compartir</th></tr>
               </thead>
               <tbody>
                 {grupo.orders.map(r => (
@@ -278,6 +294,7 @@ function AdminShelterRow({ grupo, statusLabel }) {
                     <td>{r.provider_name || '—'}</td>
                     <td className="muted">{fmtDate(r.created_at)}</td>
                     <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
+                    <td><button className="btn sm" onClick={() => compartirPedido(r.id, r.shelter_name)}>🔗</button></td>
                   </tr>
                 ))}
               </tbody>

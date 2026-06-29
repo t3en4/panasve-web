@@ -146,26 +146,24 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
             )}
           </div>
 
-          {hasActions && (
-            <div className="order-actions" style={{ marginTop: 14 }}>
-              {!ownShelter && order.status === 'pending' && (
-                <button className="btn sm primary" disabled={busy} onClick={() => onClaim(order)}>Tomar pedido</button>
-              )}
-              {!ownShelter && order.status === 'progress' && mine && (
-                <>
-                  <button className="btn sm success" disabled={busy} onClick={() => onDeliver(order)}>Marcar entregado</button>
-                  <button className="btn sm" disabled={busy} onClick={() => onRelease(order)}>Liberar</button>
-                </>
-              )}
-              {ownShelter && order.status === 'pending' && (
-                <>
-                  <button className="btn sm" onClick={() => navigate(`/editar/${order.id}`)}>Editar</button>
-                  <button className="btn sm danger-btn" disabled={busy} onClick={() => onCancel(order)}>Cancelar pedido</button>
-                </>
-              )}
-              <button className="btn sm" onClick={compartir}>🔗 Compartir</button>
-            </div>
-          )}
+          <div className="order-actions" style={{ marginTop: 14 }}>
+            {hasActions && !ownShelter && order.status === 'pending' && (
+              <button className="btn sm primary" disabled={busy} onClick={() => onClaim(order)}>Tomar pedido</button>
+            )}
+            {hasActions && !ownShelter && order.status === 'progress' && mine && (
+              <>
+                <button className="btn sm success" disabled={busy} onClick={() => onDeliver(order)}>Marcar entregado</button>
+                <button className="btn sm" disabled={busy} onClick={() => onRelease(order)}>Liberar</button>
+              </>
+            )}
+            {hasActions && ownShelter && order.status === 'pending' && (
+              <>
+                <button className="btn sm" onClick={() => navigate(`/editar/${order.id}`)}>Editar</button>
+                <button className="btn sm danger-btn" disabled={busy} onClick={() => onCancel(order)}>Cancelar pedido</button>
+              </>
+            )}
+            <button className="btn sm" onClick={compartir}>🔗 Compartir</button>
+          </div>
         </div>
       )}
     </div>
