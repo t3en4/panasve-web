@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
 import OrdersMap from '../components/OrdersMap'
 import ShelterGroup from '../components/ShelterGroup'
+import Pagination, { usePaged } from '../components/Pagination'
 
 export default function Orders() {
   const { profile, shelter: myShelter, isShelter, isProvider, isAdmin } = useAuth()
@@ -194,6 +195,15 @@ export default function Orders() {
     })
   }
 
+  // Lista de "mis pedidos" filtrada por status (proveedor)
+  const misFiltrados = misPedidos === null ? []
+    : (misStatus === 'all' ? misPedidos : misPedidos.filter(o => o.status === misStatus))
+
+  // Paginación (10 por página) para cada listado
+  const pagShelter = usePaged(list, 10, `${filter}-${estadoFilter}`)
+  const pagGrupos = usePaged(resumenList, 10, `${estadoFilter}-${tipoFilter}`)
+  const pagMios = usePaged(misFiltrados, 10, misStatus)
+
   // Marcadores del mapa según rol
   // Proveedor: ve los pedidos pendientes. Refugio: ve los proveedores.
   const myLat = isProvider ? profile?.lat : myShelter?.lat
@@ -330,20 +340,20 @@ export default function Orders() {
               </div>
               {misPedidos === null ? (
                 <div className="loading">Cargando tus pedidos…</div>
-              ) : (() => {
-                const lista = (misStatus === 'all' ? misPedidos : misPedidos.filter(o => o.status === misStatus))
-                return lista.length === 0 ? (
-                  <div className="empty-state">
-                    <span className="icon">✓</span>
-                    <p>Aún no has tomado pedidos. Revisa los disponibles y toma uno para ayudar.</p>
-                  </div>
-                ) : (
-                  lista.map(o => (
+              ) : misFiltrados.length === 0 ? (
+                <div className="empty-state">
+                  <span className="icon">✓</span>
+                  <p>Aún no has tomado pedidos. Revisa los disponibles y toma uno para ayudar.</p>
+                </div>
+              ) : (
+                <>
+                  {pagMios.pageItems.map(o => (
                     <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
                       onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
-                  ))
-                )
-              })()}
+                  ))}
+                  <Pagination page={pagMios.page} totalPages={pagMios.totalPages} setPage={pagMios.setPage} total={pagMios.total} />
+                </>
+              )}
             </>
           ) : view === 'mapa' ? (
             <div className="card" style={{ padding: 16 }}>
@@ -393,13 +403,16 @@ export default function Orders() {
                 <p>No hay pedidos activos en este momento.</p>
               </div>
             ) : (
-              <div className="shelter-groups">
-                {resumenList.map(r => (
-                  <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter}
-                    myLat={profile?.lat} myLng={profile?.lng}
-                    onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
-                ))}
-              </div>
+              <>
+                <div className="shelter-groups">
+                  {pagGrupos.pageItems.map(r => (
+                    <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter}
+                      myLat={profile?.lat} myLng={profile?.lng}
+                      onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
+                  ))}
+                </div>
+                <Pagination page={pagGrupos.page} totalPages={pagGrupos.totalPages} setPage={pagGrupos.setPage} total={pagGrupos.total} />
+              </>
             )
           ) : list.length === 0 ? (
             <div className="empty-state">
@@ -407,10 +420,13 @@ export default function Orders() {
               <p>{isShelter ? 'Aún no tienes pedidos. Crea uno nuevo.' : 'No hay pedidos que mostrar.'}</p>
             </div>
           ) : (
-            list.map(o => (
-              <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
-                onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
-            ))
+            <>
+              {pagShelter.pageItems.map(o => (
+                <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
+                  onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
+              ))}
+              <Pagination page={pagShelter.page} totalPages={pagShelter.totalPages} setPage={pagShelter.setPage} total={pagShelter.total} />
+            </>
           )}
           </>
           )}
