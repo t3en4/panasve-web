@@ -235,6 +235,15 @@ function MensajePanel({ shelters, providers }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
+  const [historial, setHistorial] = useState([])
+
+  // Cargar historial de mensajes enviados
+  async function cargarHistorial() {
+    const { data } = await supabase.from('admin_messages')
+      .select('*').order('created_at', { ascending: false }).limit(50)
+    setHistorial(data || [])
+  }
+  useEffect(() => { cargarHistorial() }, [])
 
   // Listas por tipo
   const listaRefugios = shelters.filter(s => s.email)
@@ -249,7 +258,6 @@ function MensajePanel({ shelters, providers }) {
   else usuarios = [...listaRefugios, ...listaProveedores]
   usuarios = usuarios.sort((a, b) => a.label.localeCompare(b.label))
 
-  // Si cambia el tipo, limpiar el destinatario seleccionado
   function cambiarTipo(t) { setTipo(t); setDest('') }
 
   async function enviar() {
@@ -260,7 +268,10 @@ function MensajePanel({ shelters, providers }) {
         body: { to_email: dest, subject: subject.trim(), body: body.trim() },
       })
       if (error || data?.error) { toast(data?.error || 'No se pudo enviar.', 'error') }
-      else { toast('Mensaje enviado.', 'success'); setSubject(''); setBody(''); setDest('') }
+      else {
+        toast('Mensaje enviado.', 'success'); setSubject(''); setBody(''); setDest('')
+        cargarHistorial()
+      }
     } catch {
       toast('No se pudo enviar.', 'error')
     }
@@ -268,33 +279,56 @@ function MensajePanel({ shelters, providers }) {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 620 }}>
-      <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje a un usuario</div>
-      <div className="card-sub" style={{ marginBottom: 18 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
-      <div className="msg-form">
-        <div className="msg-row">
-          <div className="field"><label>Tipo de usuario</label>
-            <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
-              <option value="todos">Todos</option>
-              <option value="refugios">Refugios</option>
-              <option value="proveedores">Proveedores</option>
-            </select>
+    <>
+      <div className="card" style={{ maxWidth: 620 }}>
+        <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje a un usuario</div>
+        <div className="card-sub" style={{ marginBottom: 18 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
+        <div className="msg-form">
+          <div className="msg-row">
+            <div className="field"><label>Tipo de usuario</label>
+              <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
+                <option value="todos">Todos</option>
+                <option value="refugios">Refugios</option>
+                <option value="proveedores">Proveedores</option>
+              </select>
+            </div>
+            <div className="field"><label>Destinatario <span className="req">*</span></label>
+              <select value={dest} onChange={e => setDest(e.target.value)}>
+                <option value="">Selecciona un usuario…</option>
+                {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
+              </select>
+            </div>
           </div>
-          <div className="field"><label>Destinatario <span className="req">*</span></label>
-            <select value={dest} onChange={e => setDest(e.target.value)}>
-              <option value="">Selecciona un usuario…</option>
-              {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
-            </select>
-          </div>
+          <div className="field"><label>Asunto <span className="req">*</span></label>
+            <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ej: Actualización sobre tu pedido" /></div>
+          <div className="field"><label>Mensaje <span className="req">*</span></label>
+            <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} placeholder="Escribe tu mensaje aquí…" style={{ minHeight: 140 }} /></div>
         </div>
-        <div className="field"><label>Asunto <span className="req">*</span></label>
-          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ej: Actualización sobre tu pedido" /></div>
-        <div className="field"><label>Mensaje <span className="req">*</span></label>
-          <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} placeholder="Escribe tu mensaje aquí…" style={{ minHeight: 140 }} /></div>
+        <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
+          {busy ? 'Enviando…' : 'Enviar mensaje'}
+        </button>
       </div>
-      <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
-        {busy ? 'Enviando…' : 'Enviar mensaje'}
-      </button>
-    </div>
+
+      <div className="card" style={{ maxWidth: 620 }}>
+        <div className="card-title" style={{ marginBottom: 14 }}>Historial de mensajes ({historial.length})</div>
+        {historial.length === 0 ? (
+          <div className="muted" style={{ fontSize: 14 }}>Aún no has enviado mensajes.</div>
+        ) : (
+          <div className="msg-history">
+            {historial.map(m => (
+              <div className="msg-history-item" key={m.id}>
+                <div className="msg-history-head">
+                  <span className="msg-history-to">{m.to_email}</span>
+                  <span className="msg-history-date">{fmtDate(m.created_at)}</span>
+                </div>
+                <div className="msg-history-subject">{m.subject}</div>
+                <div className="msg-history-body">{m.body}</div>
+                {m.sent_by_email && <div className="msg-history-by">Enviado por {m.sent_by_email}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   )
 }
