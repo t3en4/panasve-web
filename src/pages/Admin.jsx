@@ -201,7 +201,7 @@ export default function Admin() {
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : tab === 'shelters' ? (
         <div className="table-wrap">
           <table className="data">
             <thead>
@@ -219,7 +219,7 @@ export default function Admin() {
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
 
       {!loading && tab === 'mensajes' && (
         <MensajePanel shelters={shelters} providers={providers} />
@@ -230,16 +230,27 @@ export default function Admin() {
 
 function MensajePanel({ shelters, providers }) {
   const toast = useToast()
+  const [tipo, setTipo] = useState('todos')
   const [dest, setDest] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Lista combinada de destinatarios con email
-  const usuarios = [
-    ...shelters.filter(s => s.email).map(s => ({ email: s.email, label: `${s.name} (refugio · ${s.estado || 's/e'})` })),
-    ...providers.filter(p => p.email).map(p => ({ email: p.email, label: `${p.name} (proveedor · ${p.estado || 's/e'})` })),
-  ].sort((a, b) => a.label.localeCompare(b.label))
+  // Listas por tipo
+  const listaRefugios = shelters.filter(s => s.email)
+    .map(s => ({ email: s.email, label: `${s.name} · ${s.estado || 's/e'}` }))
+  const listaProveedores = providers.filter(p => p.email)
+    .map(p => ({ email: p.email, label: `${p.name} · ${p.estado || 's/e'}` }))
+
+  // Destinatarios según el tipo elegido
+  let usuarios = []
+  if (tipo === 'refugios') usuarios = listaRefugios
+  else if (tipo === 'proveedores') usuarios = listaProveedores
+  else usuarios = [...listaRefugios, ...listaProveedores]
+  usuarios = usuarios.sort((a, b) => a.label.localeCompare(b.label))
+
+  // Si cambia el tipo, limpiar el destinatario seleccionado
+  function cambiarTipo(t) { setTipo(t); setDest('') }
 
   async function enviar() {
     if (!dest || !subject.trim() || !body.trim()) { toast('Completa destinatario, asunto y mensaje.', 'error'); return }
@@ -261,10 +272,17 @@ function MensajePanel({ shelters, providers }) {
       <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje a un usuario</div>
       <div className="card-sub" style={{ marginBottom: 18 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
       <div className="form-grid">
-        <div className="field full"><label>Destinatario <span className="req">*</span></label>
+        <div className="field"><label>Tipo de usuario</label>
+          <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
+            <option value="todos">Todos</option>
+            <option value="refugios">Refugios</option>
+            <option value="proveedores">Proveedores</option>
+          </select>
+        </div>
+        <div className="field"><label>Destinatario <span className="req">*</span></label>
           <select value={dest} onChange={e => setDest(e.target.value)}>
             <option value="">Selecciona un usuario…</option>
-            {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label} — {u.email}</option>)}
+            {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
           </select>
         </div>
         <div className="field full"><label>Asunto <span className="req">*</span></label>
