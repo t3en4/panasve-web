@@ -315,6 +315,7 @@ function MensajePanel({ shelters, providers }) {
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
   const [historial, setHistorial] = useState([])
+  const [histRango, setHistRango] = useState('todos')   // hoy | 7d | 30d | todos
   // Envío masivo
   const [audience, setAudience] = useState('proveedores')   // todos | refugios | proveedores | proveedor_tipo
   const [provTipo, setProvTipo] = useState('restaurante')
@@ -388,6 +389,17 @@ function MensajePanel({ shelters, providers }) {
     setBusy(false)
   }
 
+  // Historial filtrado por rango de fecha
+  const ahora = Date.now()
+  const histFiltrado = historial.filter(m => {
+    if (histRango === 'todos') return true
+    const t = new Date(m.created_at).getTime()
+    if (histRango === 'hoy') return (ahora - t) < 24 * 3600 * 1000
+    if (histRango === '7d') return (ahora - t) < 7 * 24 * 3600 * 1000
+    if (histRango === '30d') return (ahora - t) < 30 * 24 * 3600 * 1000
+    return true
+  })
+
   return (
     <>
       <div className="card" style={{ maxWidth: 620 }}>
@@ -459,25 +471,46 @@ function MensajePanel({ shelters, providers }) {
       </div>
 
       <div className="card" style={{ maxWidth: 620 }}>
-        <div className="card-title" style={{ marginBottom: 14 }}>Historial de mensajes ({historial.length})</div>
-        {historial.length === 0 ? (
-          <div className="muted" style={{ fontSize: 14 }}>Aún no has enviado mensajes.</div>
+        <div className="card-title" style={{ marginBottom: 12 }}>Historial de mensajes</div>
+        <div className="filter-row" style={{ marginBottom: 14 }}>
+          {[['hoy', 'Hoy'], ['7d', '7 días'], ['30d', '30 días'], ['todos', 'Todos']].map(([r, label]) => (
+            <button key={r} className={`btn sm ${histRango === r ? 'accent' : ''}`} onClick={() => setHistRango(r)}>{label}</button>
+          ))}
+        </div>
+        {histFiltrado.length === 0 ? (
+          <div className="muted" style={{ fontSize: 14 }}>
+            {historial.length === 0 ? 'Aún no has enviado mensajes.' : 'No hay mensajes en este rango.'}
+          </div>
         ) : (
           <div className="msg-history">
-            {historial.map(m => (
-              <div className="msg-history-item" key={m.id}>
-                <div className="msg-history-head">
-                  <span className="msg-history-to">{m.to_email}</span>
-                  <span className="msg-history-date">{fmtDate(m.created_at)}</span>
-                </div>
-                <div className="msg-history-subject">{m.subject}</div>
-                <div className="msg-history-body">{m.body}</div>
-                {m.sent_by_email && <div className="msg-history-by">Enviado por {m.sent_by_email}</div>}
-              </div>
+            {histFiltrado.map(m => (
+              <MensajeHistItem key={m.id} m={m} />
             ))}
           </div>
         )}
       </div>
     </>
+  )
+}
+
+function MensajeHistItem({ m }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`msg-history-item ${open ? 'open' : ''}`}>
+      <button className="msg-history-head-btn" onClick={() => setOpen(o => !o)}>
+        <span className="msg-history-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <span className="msg-history-summary">
+          <span className="msg-history-subject">{m.subject}</span>
+          <span className="msg-history-to">{m.to_email}</span>
+        </span>
+        <span className="msg-history-date">{fmtDate(m.created_at)}</span>
+      </button>
+      {open && (
+        <div className="msg-history-detail">
+          <div className="msg-history-body">{m.body}</div>
+          {m.sent_by_email && <div className="msg-history-by">Enviado por {m.sent_by_email}</div>}
+        </div>
+      )}
+    </div>
   )
 }
