@@ -11,6 +11,7 @@ export default function Admin() {
   const [shelters, setShelters] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
+  const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
 
   useEffect(() => {
     async function load() {
@@ -159,30 +160,37 @@ export default function Admin() {
           </div>
         </div>
       ) : tab === 'orders' ? (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr>
-                <th>Estado</th><th>Tipo</th><th>Refugio</th><th>Detalle</th>
-                <th>Proveedor</th><th>Creado</th><th>Entregado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.id}>
-                  <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
-                  <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
-                  <td>{r.shelter_name}<br /><span className="muted">{r.shelter_estado || r.shelter_location}</span></td>
-                  <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
-                  <td>{r.provider_name || '—'}</td>
-                  <td className="muted">{fmtDate(r.created_at)}</td>
-                  <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
+        <>
+          <div className="filter-row" style={{ marginBottom: 14 }}>
+            {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
+              <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
+            ))}
+          </div>
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Estado</th><th>Tipo</th><th>Refugio</th><th>Detalle</th>
+                  <th>Proveedor</th><th>Creado</th><th>Entregado</th>
                 </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin pedidos aún.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.filter(r => tipoFilter === 'todos' || r.order_type === tipoFilter).map(r => (
+                  <tr key={r.id}>
+                    <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
+                    <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
+                    <td>{r.shelter_name}<br /><span className="muted">{r.shelter_estado || r.shelter_location}</span></td>
+                    <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
+                    <td>{r.provider_name || '—'}</td>
+                    <td className="muted">{fmtDate(r.created_at)}</td>
+                    <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
+                  </tr>
+                ))}
+                {rows.filter(r => tipoFilter === 'todos' || r.order_type === tipoFilter).length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin pedidos.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : tab === 'providers' ? (
         <div className="table-wrap">
           <table className="data">
