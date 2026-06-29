@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
-import { providerTypeLabel, shelterTypeLabel } from '../lib/constants'
+import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
   const { isAdmin } = useAuth()
@@ -308,12 +308,16 @@ function AdminShelterRow({ grupo, statusLabel }) {
 
 function MensajePanel({ shelters, providers }) {
   const toast = useToast()
+  const [modo, setModo] = useState('uno')   // uno | varios
   const [tipo, setTipo] = useState('todos')
   const [dest, setDest] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
   const [historial, setHistorial] = useState([])
+  // Envío masivo
+  const [audience, setAudience] = useState('proveedores')   // todos | refugios | proveedores | proveedor_tipo
+  const [provTipo, setProvTipo] = useState('restaurante')
 
   // Cargar historial de mensajes enviados
   async function cargarHistorial() {
@@ -356,35 +360,102 @@ function MensajePanel({ shelters, providers }) {
     setBusy(false)
   }
 
+  // Cuántos recibirán el envío masivo, según la audiencia
+  const conEmail = (arr) => arr.filter(x => x.email)
+  let totalMasivo = 0
+  if (audience === 'todos') totalMasivo = conEmail(shelters).length + conEmail(providers).length
+  else if (audience === 'refugios') totalMasivo = conEmail(shelters).length
+  else if (audience === 'proveedores') totalMasivo = conEmail(providers).length
+  else if (audience === 'proveedor_tipo') totalMasivo = conEmail(providers).filter(p => p.provider_type === provTipo).length
+
+  async function enviarMasivo() {
+    if (!subject.trim() || !body.trim()) { toast('Completa asunto y mensaje.', 'error'); return }
+    if (totalMasivo === 0) { toast('No hay destinatarios para esa selección.', 'error'); return }
+    if (!window.confirm(`Vas a enviar este mensaje a ${totalMasivo} ${totalMasivo === 1 ? 'persona' : 'personas'}. ¿Continuar?`)) return
+    setBusy(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-broadcast', {
+        body: { audience, provider_type: provTipo, subject: subject.trim(), body: body.trim() },
+      })
+      if (error || data?.error) { toast(data?.error || 'No se pudo enviar.', 'error') }
+      else {
+        toast(`Enviado a ${data.enviados} de ${data.total}.`, 'success')
+        setSubject(''); setBody(''); cargarHistorial()
+      }
+    } catch {
+      toast('No se pudo enviar.', 'error')
+    }
+    setBusy(false)
+  }
+
   return (
     <>
       <div className="card" style={{ maxWidth: 620 }}>
-        <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje a un usuario</div>
-        <div className="card-sub" style={{ marginBottom: 18 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
+        <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje</div>
+        <div className="card-sub" style={{ marginBottom: 16 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
+
+        {/* Modo: a uno o a varios */}
+        <div className="filter-row" style={{ marginBottom: 16 }}>
+          <button className={`btn sm ${modo === 'uno' ? 'accent' : ''}`} onClick={() => setModo('uno')}>A un usuario</button>
+          <button className={`btn sm ${modo === 'varios' ? 'accent' : ''}`} onClick={() => setModo('varios')}>A varios (masivo)</button>
+        </div>
+
         <div className="msg-form">
-          <div className="msg-row">
-            <div className="field"><label>Tipo de usuario</label>
-              <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
-                <option value="todos">Todos</option>
-                <option value="refugios">Refugios</option>
-                <option value="proveedores">Proveedores</option>
-              </select>
+          {modo === 'uno' ? (
+            <div className="msg-row">
+              <div className="field"><label>Tipo de usuario</label>
+                <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
+                  <option value="todos">Todos</option>
+                  <option value="refugios">Refugios</option>
+                  <option value="proveedores">Proveedores</option>
+                </select>
+              </div>
+              <div className="field"><label>Destinatario <span className="req">*</span></label>
+                <select value={dest} onChange={e => setDest(e.target.value)}>
+                  <option value="">Selecciona un usuario…</option>
+                  {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="field"><label>Destinatario <span className="req">*</span></label>
-              <select value={dest} onChange={e => setDest(e.target.value)}>
-                <option value="">Selecciona un usuario…</option>
-                {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
-              </select>
+          ) : (
+            <div className="msg-row">
+              <div className="field"><label>Enviar a</label>
+                <select value={audience} onChange={e => setAudience(e.target.value)}>
+                  <option value="proveedores">Todos los proveedores</option>
+                  <option value="refugios">Todos los refugios</option>
+                  <option value="todos">Todos (refugios + proveedores)</option>
+                  <option value="proveedor_tipo">Proveedores por tipo…</option>
+                </select>
+              </div>
+              {audience === 'proveedor_tipo' && (
+                <div className="field"><label>Tipo de proveedor</label>
+                  <select value={provTipo} onChange={e => setProvTipo(e.target.value)}>
+                    {PROVIDER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
-          </div>
+          )}
           <div className="field"><label>Asunto <span className="req">*</span></label>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ej: Actualización sobre tu pedido" /></div>
           <div className="field"><label>Mensaje <span className="req">*</span></label>
             <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} placeholder="Escribe tu mensaje aquí…" style={{ minHeight: 140 }} /></div>
         </div>
-        <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
-          {busy ? 'Enviando…' : 'Enviar mensaje'}
-        </button>
+
+        {modo === 'uno' ? (
+          <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
+            {busy ? 'Enviando…' : 'Enviar mensaje'}
+          </button>
+        ) : (
+          <div style={{ marginTop: 14 }}>
+            <button className="btn primary" onClick={enviarMasivo} disabled={busy}>
+              {busy ? 'Enviando…' : `Enviar a ${totalMasivo} ${totalMasivo === 1 ? 'persona' : 'personas'}`}
+            </button>
+            <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+              Se enviará un correo individual a cada destinatario. Las respuestas llegan a panass.venezuela@gmail.com.
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ maxWidth: 620 }}>
