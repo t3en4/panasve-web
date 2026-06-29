@@ -118,6 +118,7 @@ a:hover { opacity: 0.85; }
 .field input, .field select, .field textarea {
   padding: 11px 13px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
   background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; transition: border 0.15s, box-shadow 0.15s;
+  width: 100%; max-width: 100%; box-sizing: border-box;
 }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(60, 110, 84, 0.12); }
 .field input:disabled { background: var(--bg); color: var(--text-muted); }
@@ -531,8 +532,8 @@ table.data tr:last-child td { border-bottom: none; }
 @media (max-width: 600px) { .hero-map .orders-map { height: 260px; } }
 
 /* Formulario de mensajes del admin */
-.msg-form { display: flex; flex-direction: column; gap: 14px; }
-.msg-row { display: grid; grid-template-columns: 200px 1fr; gap: 14px; }
+.msg-form { display: flex; flex-direction: column; gap: 14px; width: 100%; min-width: 0; }
+.msg-row { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 14px; width: 100%; }
 .msg-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .msg-form select, .msg-form input, .msg-form textarea { width: 100%; max-width: 100%; box-sizing: border-box; }
 .msg-form textarea { resize: vertical; }
