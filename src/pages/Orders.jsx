@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
 import OrdersMap from '../components/OrdersMap'
+import ShelterGroup from '../components/ShelterGroup'
 
 export default function Orders() {
   const { profile, shelter: myShelter, isShelter, isProvider } = useAuth()
@@ -17,7 +18,11 @@ export default function Orders() {
   const [view, setView] = useState('lista')        // lista | mapa
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
   const [estadoFilter, setEstadoFilter] = useState('all')
+  const [resumenRefugios, setResumenRefugios] = useState([])
+  const [misPedidos, setMisPedidos] = useState(null)   // null = no cargado aún
+  const [misStatus, setMisStatus] = useState('all')     // all | progress | done
   const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
 
@@ -39,6 +44,25 @@ export default function Orders() {
     supabase.from('profiles').select('name, provider_type, lat, lng, phone, estado').eq('role', 'provider')
       .then(({ data }) => setProviders(data || []))
   }, [isShelter])
+
+  // Cargar los pedidos que el proveedor tomó (en progreso + entregados), diferido
+  const cargarMisPedidos = useCallback(async () => {
+    if (!profile?.id) return
+    const { data } = await supabase.from('orders')
+      .select('*')
+      .eq('claimed_by', profile.id)
+      .in('status', ['progress', 'done'])
+      .order('created_at', { ascending: false })
+    setMisPedidos(data || [])
+  }, [profile?.id])
+
+  // Resumen de refugios con pedidos activos (vista de proveedor, agrupado)
+  useEffect(() => {
+    if (!isProvider) return
+    supabase.rpc('refugios_con_pedidos_activos').then(({ data }) => {
+      setResumenRefugios(data || [])
+    })
+  }, [isProvider])
 
   // Conteo de refugios y proveedores registrados (para el hero del home)
   useEffect(() => {
@@ -71,6 +95,7 @@ export default function Orders() {
     setBusy(false)
     if (error) { setOrders(prev); toast('No se pudo tomar el pedido. Quizá ya fue tomado.', 'error'); load(); return }
     toast('Pedido tomado. ¡Gracias por ayudar, pana!')
+    if (misPedidos !== null) cargarMisPedidos()
   }
 
   async function deliver(order) {
@@ -81,6 +106,7 @@ export default function Orders() {
     setBusy(false)
     if (error) { setOrders(prev); toast('No se pudo actualizar.', 'error'); return }
     toast('Pedido marcado como entregado. ¡Excelente trabajo!')
+    if (misPedidos !== null) cargarMisPedidos()
   }
 
   async function release(order) {
@@ -92,6 +118,7 @@ export default function Orders() {
     setBusy(false)
     if (error) { setOrders(prev); toast('No se pudo liberar.', 'error'); return }
     toast('Pedido liberado y disponible nuevamente.')
+    if (misPedidos !== null) cargarMisPedidos()
   }
 
   async function cancel(order) {
@@ -154,6 +181,17 @@ export default function Orders() {
     : [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados']]
 
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
+
+  // Resumen de refugios para proveedores: filtrar por estado y ordenar por cercanía
+  let resumenList = resumenRefugios
+  if (estadoFilter !== 'all') resumenList = resumenList.filter(r => r.estado === estadoFilter)
+  if (isProvider && profile?.lat != null) {
+    resumenList = [...resumenList].sort((a, b) => {
+      const da = a.lat != null ? (distanceKm(profile.lat, profile.lng, a.lat, a.lng) ?? 9999) : 9999
+      const db = b.lat != null ? (distanceKm(profile.lat, profile.lng, b.lat, b.lng) ?? 9999) : 9999
+      return da - db
+    })
+  }
 
   // Marcadores del mapa según rol
   // Proveedor: ve los pedidos pendientes. Refugio: ve los proveedores.
@@ -265,13 +303,48 @@ export default function Orders() {
             {isShelter && <button className="btn primary" onClick={() => navigate('/nuevo')}>+ Nuevo pedido</button>}
           </div>
 
-          {/* Pestañas Lista | Mapa */}
+          {/* Pestañas */}
           <div className="view-tabs">
-            <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Lista</button>
-            <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+            {isProvider ? (
+              <>
+                <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Disponibles</button>
+                <button className={`view-tab ${view === 'mios' ? 'active' : ''}`}
+                  onClick={() => { setView('mios'); if (misPedidos === null) cargarMisPedidos() }}>✓ Mis pedidos</button>
+                <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+              </>
+            ) : (
+              <>
+                <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Lista</button>
+                <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+              </>
+            )}
           </div>
 
-          {view === 'mapa' ? (
+          {view === 'mios' ? (
+            <>
+              <div className="filter-row">
+                {[['all', 'Todos'], ['progress', 'En progreso'], ['done', 'Entregados']].map(([s, label]) => (
+                  <button key={s} className={`btn sm ${misStatus === s ? 'accent' : ''}`} onClick={() => setMisStatus(s)}>{label}</button>
+                ))}
+              </div>
+              {misPedidos === null ? (
+                <div className="loading">Cargando tus pedidos…</div>
+              ) : (() => {
+                const lista = (misStatus === 'all' ? misPedidos : misPedidos.filter(o => o.status === misStatus))
+                return lista.length === 0 ? (
+                  <div className="empty-state">
+                    <span className="icon">✓</span>
+                    <p>Aún no has tomado pedidos. Revisa los disponibles y toma uno para ayudar.</p>
+                  </div>
+                ) : (
+                  lista.map(o => (
+                    <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
+                      onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
+                  ))
+                )
+              })()}
+            </>
+          ) : view === 'mapa' ? (
             <div className="card" style={{ padding: 16 }}>
               <div className="card-sub" style={{ marginBottom: 12 }}>
                 {isProvider
@@ -300,8 +373,33 @@ export default function Orders() {
             )}
           </div>
 
+          {/* Filtro comida / insumos (solo proveedor, vista agrupada) */}
+          {isProvider && (
+            <div className="filter-row">
+              {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
+                <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <div className="loading">Cargando pedidos…</div>
+          ) : isProvider ? (
+            /* Vista de proveedor: refugios agrupados, colapsables, carga diferida */
+            resumenList.length === 0 ? (
+              <div className="empty-state">
+                <span className="icon">📋</span>
+                <p>No hay pedidos activos en este momento.</p>
+              </div>
+            ) : (
+              <div className="shelter-groups">
+                {resumenList.map(r => (
+                  <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter}
+                    myLat={profile?.lat} myLng={profile?.lng}
+                    onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
+                ))}
+              </div>
+            )
           ) : list.length === 0 ? (
             <div className="empty-state">
               <span className="icon">📋</span>
