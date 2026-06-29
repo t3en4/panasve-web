@@ -271,23 +271,25 @@ function MensajePanel({ shelters, providers }) {
     <div className="card" style={{ maxWidth: 620 }}>
       <div className="card-title" style={{ marginBottom: 4 }}>Enviar mensaje a un usuario</div>
       <div className="card-sub" style={{ marginBottom: 18 }}>El mensaje llega por correo, con el logo y formato de PanasVE.</div>
-      <div className="form-grid">
-        <div className="field"><label>Tipo de usuario</label>
-          <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
-            <option value="todos">Todos</option>
-            <option value="refugios">Refugios</option>
-            <option value="proveedores">Proveedores</option>
-          </select>
+      <div className="msg-form">
+        <div className="msg-row">
+          <div className="field"><label>Tipo de usuario</label>
+            <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
+              <option value="todos">Todos</option>
+              <option value="refugios">Refugios</option>
+              <option value="proveedores">Proveedores</option>
+            </select>
+          </div>
+          <div className="field"><label>Destinatario <span className="req">*</span></label>
+            <select value={dest} onChange={e => setDest(e.target.value)}>
+              <option value="">Selecciona un usuario…</option>
+              {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="field"><label>Destinatario <span className="req">*</span></label>
-          <select value={dest} onChange={e => setDest(e.target.value)}>
-            <option value="">Selecciona un usuario…</option>
-            {usuarios.map((u, i) => <option key={i} value={u.email}>{u.label}</option>)}
-          </select>
-        </div>
-        <div className="field full"><label>Asunto <span className="req">*</span></label>
+        <div className="field"><label>Asunto <span className="req">*</span></label>
           <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ej: Actualización sobre tu pedido" /></div>
-        <div className="field full"><label>Mensaje <span className="req">*</span></label>
+        <div className="field"><label>Mensaje <span className="req">*</span></label>
           <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} placeholder="Escribe tu mensaje aquí…" style={{ minHeight: 140 }} /></div>
       </div>
       <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
