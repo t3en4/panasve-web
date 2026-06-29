@@ -21,11 +21,6 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
 
   async function compartir() {
     const url = `${window.location.origin}/pedido/${order.id}`
-    const titulo = `Pedido en PanasVE — ${shelter?.name || ''}`.trim()
-    // Usa el menú nativo de compartir en móvil si está disponible
-    if (navigator.share) {
-      try { await navigator.share({ title: titulo, url }); return } catch { /* cancelado */ }
-    }
     try {
       await navigator.clipboard.writeText(url)
       toast('Enlace copiado. ¡Compártelo con quien pueda ayudar!')

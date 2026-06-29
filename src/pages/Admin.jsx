@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
+import Pagination, { usePaged } from '../components/Pagination'
 import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
@@ -28,6 +29,10 @@ export default function Admin() {
     }
     load()
   }, [])
+
+  // Paginación de tablas (10 por página)
+  const pagProv = usePaged(providers, 10, 'prov')
+  const pagShel = usePaged(shelters, 10, 'shel')
 
   if (!isAdmin) return <div className="content"><div className="empty-state">Acceso solo para administradores.</div></div>
 
@@ -175,41 +180,47 @@ export default function Admin() {
           <AdminOrdersGrouped rows={rows} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} />
         </>
       ) : tab === 'providers' ? (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th></tr>
-            </thead>
-            <tbody>
-              {providers.map(p => (
-                <tr key={p.id}>
-                  <td>{p.name}</td><td>{providerTypeLabel(p.provider_type)}</td><td>{p.estado || '—'}</td>
-                  <td>{p.email}</td><td>{p.phone || '—'}</td><td>{p.instagram || '—'}</td>
-                  <td className="muted">{fmtDate(p.created_at)}</td>
-                </tr>
-              ))}
-              {providers.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th></tr>
+              </thead>
+              <tbody>
+                {pagProv.pageItems.map(p => (
+                  <tr key={p.id}>
+                    <td>{p.name}</td><td>{providerTypeLabel(p.provider_type)}</td><td>{p.estado || '—'}</td>
+                    <td>{p.email}</td><td>{p.phone || '—'}</td><td>{p.instagram || '—'}</td>
+                    <td className="muted">{fmtDate(p.created_at)}</td>
+                  </tr>
+                ))}
+                {providers.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={pagProv.page} totalPages={pagProv.totalPages} setPage={pagProv.setPage} total={pagProv.total} />
+        </>
       ) : tab === 'shelters' ? (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr><th>Refugio</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
-            </thead>
-            <tbody>
-              {shelters.map(s => (
-                <tr key={s.id}>
-                  <td>{s.name}</td><td>{shelterTypeLabel(s.shelter_type)}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
-                  <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
-                  <td className="muted">{fmtDate(s.created_at)}</td>
-                </tr>
-              ))}
-              {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr><th>Refugio</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
+              </thead>
+              <tbody>
+                {pagShel.pageItems.map(s => (
+                  <tr key={s.id}>
+                    <td>{s.name}</td><td>{shelterTypeLabel(s.shelter_type)}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
+                    <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
+                    <td className="muted">{fmtDate(s.created_at)}</td>
+                  </tr>
+                ))}
+                {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={pagShel.page} totalPages={pagShel.totalPages} setPage={pagShel.setPage} total={pagShel.total} />
+        </>
       ) : null}
 
       {!loading && tab === 'mensajes' && (
@@ -237,16 +248,21 @@ function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
   }
   const lista = Object.values(grupos).sort((a, b) => (b.orders.length - a.orders.length))
 
+  const pag = usePaged(lista, 10, `${tipoFilter}-${statusFilter}`)
+
   if (lista.length === 0) {
     return <div className="empty-state"><span className="icon">📋</span><p>Sin pedidos.</p></div>
   }
 
   return (
-    <div className="shelter-groups">
-      {lista.map((g, i) => (
-        <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} />
-      ))}
-    </div>
+    <>
+      <div className="shelter-groups">
+        {pag.pageItems.map((g, i) => (
+          <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} />
+        ))}
+      </div>
+      <Pagination page={pag.page} totalPages={pag.totalPages} setPage={pag.setPage} total={pag.total} />
+    </>
   )
 }
 
@@ -256,10 +272,6 @@ function AdminShelterRow({ grupo, statusLabel }) {
 
   async function compartirPedido(id, nombre) {
     const url = `${window.location.origin}/pedido/${id}`
-    const titulo = `Pedido en PanasVE — ${nombre || ''}`.trim()
-    if (navigator.share) {
-      try { await navigator.share({ title: titulo, url }); return } catch { /* cancelado */ }
-    }
     try {
       await navigator.clipboard.writeText(url)
       toast('Enlace copiado. ¡Compártelo con quien pueda ayudar!', 'success')
@@ -399,6 +411,7 @@ function MensajePanel({ shelters, providers }) {
     if (histRango === '30d') return (ahora - t) < 30 * 24 * 3600 * 1000
     return true
   })
+  const pagHist = usePaged(histFiltrado, 10, histRango)
 
   return (
     <>
@@ -483,9 +496,10 @@ function MensajePanel({ shelters, providers }) {
           </div>
         ) : (
           <div className="msg-history">
-            {histFiltrado.map(m => (
+            {pagHist.pageItems.map(m => (
               <MensajeHistItem key={m.id} m={m} />
             ))}
+            <Pagination page={pagHist.page} totalPages={pagHist.totalPages} setPage={pagHist.setPage} total={pagHist.total} />
           </div>
         )}
       </div>
