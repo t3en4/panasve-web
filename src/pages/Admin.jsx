@@ -12,6 +12,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
+  const [statusFilter, setStatusFilter] = useState('todos')   // todos | pending | progress | done | cancelled
 
   useEffect(() => {
     async function load() {
@@ -161,35 +162,17 @@ export default function Admin() {
         </div>
       ) : tab === 'orders' ? (
         <>
-          <div className="filter-row" style={{ marginBottom: 14 }}>
+          <div className="filter-row" style={{ marginBottom: 10 }}>
             {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
               <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
             ))}
           </div>
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>Estado</th><th>Tipo</th><th>Refugio</th><th>Detalle</th>
-                  <th>Proveedor</th><th>Creado</th><th>Entregado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.filter(r => tipoFilter === 'todos' || r.order_type === tipoFilter).map(r => (
-                  <tr key={r.id}>
-                    <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
-                    <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
-                    <td>{r.shelter_name}<br /><span className="muted">{r.shelter_estado || r.shelter_location}</span></td>
-                    <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
-                    <td>{r.provider_name || '—'}</td>
-                    <td className="muted">{fmtDate(r.created_at)}</td>
-                    <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
-                  </tr>
-                ))}
-                {rows.filter(r => tipoFilter === 'todos' || r.order_type === tipoFilter).length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin pedidos.</td></tr>}
-              </tbody>
-            </table>
+          <div className="filter-row" style={{ marginBottom: 14 }}>
+            {[['todos', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']].map(([s, label]) => (
+              <button key={s} className={`btn sm ${statusFilter === s ? 'accent' : ''}`} onClick={() => setStatusFilter(s)}>{label}</button>
+            ))}
           </div>
+          <AdminOrdersGrouped rows={rows} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} />
         </>
       ) : tab === 'providers' ? (
         <div className="table-wrap">
@@ -231,6 +214,76 @@ export default function Admin() {
 
       {!loading && tab === 'mensajes' && (
         <MensajePanel shelters={shelters} providers={providers} />
+      )}
+    </div>
+  )
+}
+
+function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
+  // Filtrar por tipo y status, luego agrupar por refugio
+  const filtradas = rows.filter(r =>
+    (tipoFilter === 'todos' || r.order_type === tipoFilter) &&
+    (statusFilter === 'todos' || r.status === statusFilter)
+  )
+
+  // Agrupar por shelter
+  const grupos = {}
+  for (const r of filtradas) {
+    const key = r.shelter_id || r.shelter_name || 'sin-refugio'
+    if (!grupos[key]) {
+      grupos[key] = { name: r.shelter_name || 'Sin refugio', estado: r.shelter_estado || r.shelter_location, orders: [] }
+    }
+    grupos[key].orders.push(r)
+  }
+  const lista = Object.values(grupos).sort((a, b) => (b.orders.length - a.orders.length))
+
+  if (lista.length === 0) {
+    return <div className="empty-state"><span className="icon">📋</span><p>Sin pedidos.</p></div>
+  }
+
+  return (
+    <div className="shelter-groups">
+      {lista.map((g, i) => (
+        <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} />
+      ))}
+    </div>
+  )
+}
+
+function AdminShelterRow({ grupo, statusLabel }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`shelter-group ${open ? 'open' : ''}`}>
+      <button className="shelter-group-head" onClick={() => setOpen(o => !o)}>
+        <span className="shelter-group-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <span className="shelter-group-info">
+          <span className="shelter-group-name">{grupo.name}</span>
+          <span className="shelter-group-meta">{grupo.estado || 's/e'}</span>
+        </span>
+        <span className="shelter-group-count">{grupo.orders.length} {grupo.orders.length === 1 ? 'pedido' : 'pedidos'}</span>
+      </button>
+      {open && (
+        <div className="shelter-group-body">
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr><th>Estado</th><th>Tipo</th><th>Detalle</th><th>Proveedor</th><th>Creado</th><th>Entregado</th></tr>
+              </thead>
+              <tbody>
+                {grupo.orders.map(r => (
+                  <tr key={r.id}>
+                    <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
+                    <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
+                    <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
+                    <td>{r.provider_name || '—'}</td>
+                    <td className="muted">{fmtDate(r.created_at)}</td>
+                    <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   )
