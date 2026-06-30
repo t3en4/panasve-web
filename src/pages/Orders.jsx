@@ -184,9 +184,22 @@ export default function Orders() {
   const agrupado = isProvider || isAdmin   // vista agrupada por refugio
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
-  // Resumen de refugios (agrupado): filtrar por estado y ordenar por cercanía (proveedor)
+  // Resumen de refugios (agrupado): filtrar por estado/status y ordenar por cercanía
   let resumenList = resumenRefugios
   if (estadoFilter !== 'all') resumenList = resumenList.filter(r => r.estado === estadoFilter)
+
+  // Filtrar refugios según el status seleccionado: solo los que tengan
+  // al menos un pedido en ese estado. 'all' = activos (pendiente + progreso).
+  if (agrupado) {
+    resumenList = resumenList.filter(r => {
+      if (filter === 'pending') return Number(r.pending_count) > 0
+      if (filter === 'progress') return Number(r.progress_count) > 0
+      if (filter === 'done') return Number(r.done_count) > 0
+      if (filter === 'cancelled') return false  // no se listan refugios por cancelados aquí
+      return Number(r.total_count) > 0          // 'all' = activos
+    })
+  }
+
   if (isProvider && profile?.lat != null) {
     resumenList = [...resumenList].sort((a, b) => {
       const da = a.lat != null ? (distanceKm(profile.lat, profile.lng, a.lat, a.lng) ?? 9999) : 9999
@@ -406,7 +419,7 @@ export default function Orders() {
               <>
                 <div className="shelter-groups">
                   {pagGrupos.pageItems.map(r => (
-                    <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter}
+                    <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter} statusFilter={filter}
                       myLat={profile?.lat} myLng={profile?.lng}
                       onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
                   ))}

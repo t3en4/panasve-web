@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase, distanceKm, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import FoodContributions from './FoodContributions'
 
 // Tarjeta colapsable de un refugio. Al expandir muestra la info compartida
 // una sola vez (ubicación, contacto, notas, mapa) y luego una línea por item.
-export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
+export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat, myLng,
   onClaim, onDeliver, onRelease, onCancel, busy }) {
   const { profile, isProvider, isShelter, shelter: myShelter } = useAuth()
   const [open, setOpen] = useState(false)
@@ -24,6 +24,12 @@ export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
     if (next && orders === null) await recargar()
   }
 
+  // Recargar cuando cambian los filtros (si el grupo ya está abierto)
+  useEffect(() => {
+    if (open) recargar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, tipoFilter])
+
   async function recargar() {
     setLoading(true)
     const [{ data: s }, ordersData] = await Promise.all([
@@ -32,8 +38,13 @@ export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
       (async () => {
         let q = supabase.from('orders').select('*')
           .eq('shelter_id', resumen.shelter_id)
-          .in('status', ['pending', 'progress'])
           .order('created_at', { ascending: false })
+        // Filtro de status: si es 'all'/vacío, mostramos activos (pendiente + progreso)
+        if (statusFilter && statusFilter !== 'all') {
+          q = q.eq('status', statusFilter)
+        } else {
+          q = q.in('status', ['pending', 'progress'])
+        }
         if (tipoFilter !== 'todos') q = q.eq('order_type', tipoFilter)
         const { data } = await q
         return data || []
@@ -55,7 +66,12 @@ export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
     setLoading(false)
   }
 
-  const count = tipoFilter === 'comida' ? resumen.comida_count
+  // Conteo según los filtros activos
+  let count
+  if (statusFilter === 'pending') count = resumen.pending_count
+  else if (statusFilter === 'progress') count = resumen.progress_count
+  else if (statusFilter === 'done') count = resumen.done_count
+  else count = tipoFilter === 'comida' ? resumen.comida_count
     : tipoFilter === 'insumos' ? resumen.insumos_count
     : resumen.total_count
   if (Number(count) === 0) return null
