@@ -629,3 +629,10 @@ table.data tr:last-child td { border-bottom: none; }
 .sg-progress-fill { display: block; height: 100%; background: var(--terracota); border-radius: 6px; transition: width 0.3s ease; }
 .sg-progress-fill.done { background: var(--accent); }
 .sg-progress-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+
+/* Estado de aportes (entregado / pendiente) */
+.contrib-state { margin-top: 10px; font-size: 13.5px; font-weight: 600; color: var(--terracota); }
+.contrib-tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+.contrib-tag.entregado { background: var(--accent-bg, #e7f0e6); color: var(--accent-deep); }
+.contrib-tag.pendiente { background: #fbf0d9; color: #8a5a0b; }
+.contrib-row-actions { display: inline-flex; align-items: center; gap: 8px; }

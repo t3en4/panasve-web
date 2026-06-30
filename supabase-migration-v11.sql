@@ -5,7 +5,10 @@
 -- Corre en Supabase > SQL Editor > Run.
 -- ============================================================
 
-create or replace function public.refugios_con_pedidos_activos()
+-- Borrar la función existente para poder cambiar sus columnas de retorno
+drop function if exists public.refugios_con_pedidos_activos();
+
+create function public.refugios_con_pedidos_activos()
 returns table (
   shelter_id uuid,
   name text,

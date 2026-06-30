@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './Toast'
 
-// Muestra el progreso de aportes de un pedido de comida y permite aportar.
+// Progreso de aportes de un pedido de comida.
+// Separa "comprometido" (aporte registrado) de "entregado" (delivered_at).
 export default function FoodContributions({ order, onChanged }) {
   const { profile, isProvider } = useAuth()
   const toast = useToast()
@@ -25,7 +26,9 @@ export default function FoodContributions({ order, onChanged }) {
   const meta = order.people || 0
   const pct = meta > 0 ? Math.min(100, Math.round((total / meta) * 100)) : 0
   const falta = Math.max(0, meta - total)
-  const completo = total >= meta && meta > 0
+  const cubierto = total >= meta && meta > 0
+  const pendientesEntrega = contribs.filter(c => !c.delivered_at).length
+  const todoEntregado = cubierto && pendientesEntrega === 0
 
   async function aportar() {
     const n = parseInt(amount)
@@ -40,6 +43,16 @@ export default function FoodContributions({ order, onChanged }) {
     if (error) { toast(error.message || 'No se pudo registrar el aporte.', 'error'); return }
     toast(`¡Gracias! Registramos tu aporte de ${aporte} comidas.`)
     setAmount('')
+    await cargar()
+    onChanged && onChanged()
+  }
+
+  async function marcarEntregado(id) {
+    setBusy(true)
+    const { error } = await supabase.rpc('marcar_aporte_entregado', { p_contribution_id: id })
+    setBusy(false)
+    if (error) { toast('No se pudo marcar como entregado.', 'error'); return }
+    toast('¡Entrega confirmada! Gracias, pana.')
     await cargar()
     onChanged && onChanged()
   }
@@ -62,27 +75,50 @@ export default function FoodContributions({ order, onChanged }) {
       {/* Barra de progreso */}
       <div className="contrib-bar-row">
         <div className="contrib-bar-track">
-          <div className={`contrib-bar-fill ${completo ? 'done' : ''}`} style={{ width: `${pct}%` }} />
+          <div className={`contrib-bar-fill ${todoEntregado ? 'done' : ''}`} style={{ width: `${pct}%` }} />
         </div>
         <span className="contrib-bar-label">{total} de {meta} comidas ({pct}%)</span>
       </div>
 
+      {/* Estado global */}
+      {cubierto && !todoEntregado && (
+        <div className="contrib-state">✓ Cubierto · pendiente de entrega</div>
+      )}
+      {todoEntregado && (
+        <div className="contrib-complete">✓ ¡Entregado! {total} comidas cubiertas y entregadas.</div>
+      )}
+
       {/* Lista de aportes */}
       {contribs.length > 0 && (
         <ul className="contrib-list">
-          {contribs.map(c => (
-            <li key={c.id}>
-              <span>{c.provider_name || 'Proveedor'} — <strong>{c.amount}</strong> comidas</span>
-              {profile && c.provider_id === profile.id && !busy && (
-                <button className="contrib-undo" onClick={() => deshacer(c.id)}>deshacer</button>
-              )}
-            </li>
-          ))}
+          {contribs.map(c => {
+            const propio = profile && c.provider_id === profile.id
+            return (
+              <li key={c.id}>
+                <span>
+                  {c.provider_name || 'Proveedor'} — <strong>{c.amount}</strong> comidas
+                  {c.delivered_at
+                    ? <span className="contrib-tag entregado">entregado</span>
+                    : <span className="contrib-tag pendiente">pendiente</span>}
+                </span>
+                {propio && !busy && (
+                  <span className="contrib-row-actions">
+                    {!c.delivered_at && (
+                      <button className="btn xs success" onClick={() => marcarEntregado(c.id)}>Ya entregué</button>
+                    )}
+                    {!c.delivered_at && (
+                      <button className="contrib-undo" onClick={() => deshacer(c.id)}>deshacer</button>
+                    )}
+                  </span>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
-      {/* Campo para aportar (solo proveedores, si no está completo) */}
-      {isProvider && !completo && (
+      {/* Campo para aportar (proveedores, si no está cubierto) */}
+      {isProvider && !cubierto && (
         <div className="contrib-form">
           <input type="number" min="1" max={falta} value={amount}
             onChange={e => setAmount(e.target.value)} placeholder={`¿Cuántas? (faltan ${falta})`} />
@@ -91,7 +127,6 @@ export default function FoodContributions({ order, onChanged }) {
           </button>
         </div>
       )}
-      {completo && <div className="contrib-complete">✓ ¡Pedido completo! {total} comidas cubiertas.</div>}
     </div>
   )
 }
