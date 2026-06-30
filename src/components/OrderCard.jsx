@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, fmtDate, distanceKm } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './Toast'
+import FoodContributions from './FoodContributions'
 
 const STATUS = {
   pending: { label: 'Pendiente', cls: 'pending' },
@@ -11,7 +12,7 @@ const STATUS = {
   cancelled: { label: 'Cancelado', cls: 'cancelled' },
 }
 
-export default function OrderCard({ order, shelter, onClaim, onDeliver, onRelease, onCancel, busy }) {
+export default function OrderCard({ order, shelter, onClaim, onDeliver, onRelease, onCancel, busy, onChanged }) {
   const { profile, shelter: myShelter, isShelter } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
@@ -119,6 +120,19 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
 
           <div className="timestamp">Pedido: {fmtDate(order.created_at)}</div>
 
+          {/* Aportes parciales (solo comida) */}
+          {!isInsumos && !ownShelter && (
+            <div style={{ marginTop: 12 }}>
+              <FoodContributions order={order} onChanged={onChanged} />
+            </div>
+          )}
+          {!isInsumos && ownShelter && (
+            <div style={{ marginTop: 12 }}>
+              <div className="history-title" style={{ marginBottom: 6 }}>Aportes de proveedores</div>
+              <FoodContributions order={order} onChanged={onChanged} />
+            </div>
+          )}
+
           {/* Historial */}
           <div className="history-box" style={{ marginTop: 10 }}>
             <div className="history-title">Historial</div>
@@ -142,10 +156,10 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
           </div>
 
           <div className="order-actions" style={{ marginTop: 14 }}>
-            {hasActions && !ownShelter && order.status === 'pending' && (
+            {hasActions && isInsumos && !ownShelter && order.status === 'pending' && (
               <button className="btn sm primary" disabled={busy} onClick={() => onClaim(order)}>Tomar pedido</button>
             )}
-            {hasActions && !ownShelter && order.status === 'progress' && mine && (
+            {hasActions && isInsumos && !ownShelter && order.status === 'progress' && mine && (
               <>
                 <button className="btn sm success" disabled={busy} onClick={() => onDeliver(order)}>Marcar entregado</button>
                 <button className="btn sm" disabled={busy} onClick={() => onRelease(order)}>Liberar</button>

@@ -7,7 +7,7 @@ import { useToast } from '../components/Toast'
 import CoordsHelp from '../components/CoordsHelp'
 
 const MEALS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena']
-const MAX_ITEMS = 5
+const MAX_ITEMS = 20
 
 export default function NewOrder() {
   const { id } = useParams()          // si viene, estamos editando

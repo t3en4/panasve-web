@@ -18,17 +18,21 @@ export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
     setOpen(next)
     // Cargar pedidos la primera vez que se expande
     if (next && orders === null) {
-      setLoading(true)
-      let q = supabase.from('orders')
-        .select('*')
-        .eq('shelter_id', resumen.shelter_id)
-        .in('status', ['pending', 'progress'])
-        .order('created_at', { ascending: false })
-      if (tipoFilter !== 'todos') q = q.eq('order_type', tipoFilter)
-      const { data } = await q
-      setOrders(data || [])
-      setLoading(false)
+      await recargar()
     }
+  }
+
+  async function recargar() {
+    setLoading(true)
+    let q = supabase.from('orders')
+      .select('*')
+      .eq('shelter_id', resumen.shelter_id)
+      .in('status', ['pending', 'progress'])
+      .order('created_at', { ascending: false })
+    if (tipoFilter !== 'todos') q = q.eq('order_type', tipoFilter)
+    const { data } = await q
+    setOrders(data || [])
+    setLoading(false)
   }
 
   // Conteo visible según el filtro de tipo
@@ -68,7 +72,8 @@ export default function ShelterGroup({ resumen, tipoFilter, myLat, myLng,
           ) : (
             orders.map(o => (
               <OrderCard key={o.id} order={o} shelter={shelterObj}
-                onClaim={onClaim} onDeliver={onDeliver} onRelease={onRelease} onCancel={onCancel} busy={busy} />
+                onClaim={onClaim} onDeliver={onDeliver} onRelease={onRelease} onCancel={onCancel} busy={busy}
+                onChanged={recargar} />
             ))
           )}
         </div>
