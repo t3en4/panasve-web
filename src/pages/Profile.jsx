@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, parseCoords, distanceKm } from '../lib/supabase'
 import { ESTADOS, PROVIDER_TYPES, SHELTER_TYPES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
@@ -8,9 +9,11 @@ import OrdersMap from '../components/OrdersMap'
 import SafetyGuide from '../components/SafetyGuide'
 
 export default function Profile() {
-  const { profile, shelter, isShelter, isProvider, refreshProfile } = useAuth()
+  const { profile, shelter, isShelter, isProvider, refreshProfile, signOut } = useAuth()
   const toast = useToast()
+  const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
   const [mapMarkers, setMapMarkers] = useState([])
 
   // Origen de datos según rol
@@ -109,6 +112,25 @@ export default function Profile() {
     toast('Perfil actualizado.')
   }
 
+  async function desactivarCuenta() {
+    const msg = isShelter
+      ? '¿Seguro que quieres desactivar tu cuenta? Tus pedidos activos se cancelarán y dejarás de recibir correos. Podrás pedir reactivación al equipo de PanasVE.'
+      : '¿Seguro que quieres desactivar tu cuenta? Dejarás de recibir correos y de aparecer en la plataforma. Podrás pedir reactivación al equipo de PanasVE.'
+    if (!window.confirm(msg)) return
+    setDeactivating(true)
+    try {
+      // Cancela pedidos activos propios (solo aplica a refugios) y marca la cuenta
+      if (isShelter) await supabase.rpc('cancelar_pedidos_activos_propios')
+      const { error } = await supabase.rpc('desactivar_mi_cuenta')
+      if (error) { toast('No se pudo desactivar la cuenta.', 'error'); setDeactivating(false); return }
+      toast('Tu cuenta fue desactivada. Cerrando sesión…')
+      setTimeout(async () => { await signOut(); navigate('/') }, 1500)
+    } catch {
+      toast('No se pudo desactivar la cuenta.', 'error')
+      setDeactivating(false)
+    }
+  }
+
   if (!profile) return null
 
   return (
@@ -181,6 +203,19 @@ export default function Profile() {
           />
         </div>
       )}
+
+      {/* Zona de cuenta */}
+      <div className="card danger-zone" style={{ maxWidth: 620 }}>
+        <div className="card-title" style={{ marginBottom: 4 }}>Desactivar mi cuenta</div>
+        <div className="card-sub" style={{ marginBottom: 14 }}>
+          Tu cuenta se ocultará y dejarás de recibir correos.
+          {isShelter ? ' Tus pedidos activos se cancelarán (los entregados quedan como historial).' : ''}
+          {' '}No se borra de forma permanente: puedes pedirle al equipo de PanasVE que la reactive.
+        </div>
+        <button className="btn danger-btn" onClick={desactivarCuenta} disabled={deactivating}>
+          {deactivating ? 'Desactivando…' : 'Desactivar mi cuenta'}
+        </button>
+      </div>
     </div>
   )
 }

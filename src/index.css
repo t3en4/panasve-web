@@ -574,3 +574,17 @@ table.data tr:last-child td { border-bottom: none; }
 /* Paginación */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
 .pagination-info { font-size: 13px; color: var(--text-secondary); }
+
+/* Filas de gestión de pedidos en admin */
+.admin-order-row { border-top: 1px solid var(--border); padding: 12px 0; }
+.admin-order-row:first-child { border-top: none; }
+.admin-order-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.admin-order-type { font-size: 16px; }
+.admin-order-detail { font-size: 13.5px; color: var(--text-secondary); flex: 1; min-width: 120px; }
+.admin-order-prov { font-size: 12.5px; color: var(--accent-deep); background: var(--accent-bg); padding: 2px 9px; border-radius: 12px; }
+.admin-order-actions { display: flex; gap: 6px; }
+.admin-order-edit { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; padding: 14px; background: var(--bg); border-radius: var(--radius-sm); }
+.admin-order-edit .field { flex: 1; min-width: 180px; }
+
+/* Zona de desactivar cuenta */
+.danger-zone { border-color: #e8d4c4; background: #fdf8f3; }

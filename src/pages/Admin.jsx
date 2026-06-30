@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
@@ -15,20 +15,19 @@ export default function Admin() {
   const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
   const [statusFilter, setStatusFilter] = useState('todos')   // todos | pending | progress | done | cancelled
 
-  useEffect(() => {
-    async function load() {
-      const [{ data: o }, { data: p }, { data: s }] = await Promise.all([
-        supabase.from('orders_full').select('*').order('created_at', { ascending: false }),
-        supabase.from('profiles').select('*').eq('role', 'provider').order('created_at', { ascending: false }),
-        supabase.from('shelters').select('*').order('created_at', { ascending: false }),
-      ])
-      setRows(o || [])
-      setProviders(p || [])
-      setShelters(s || [])
-      setLoading(false)
-    }
-    load()
+  const load = useCallback(async () => {
+    const [{ data: o }, { data: p }, { data: s }] = await Promise.all([
+      supabase.from('orders_full').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('*').eq('role', 'provider').order('created_at', { ascending: false }),
+      supabase.from('shelters').select('*').order('created_at', { ascending: false }),
+    ])
+    setRows(o || [])
+    setProviders(p || [])
+    setShelters(s || [])
+    setLoading(false)
   }, [])
+
+  useEffect(() => { load() }, [load])
 
   // Paginación de tablas (10 por página)
   const pagProv = usePaged(providers, 10, 'prov')
@@ -177,7 +176,7 @@ export default function Admin() {
               <button key={s} className={`btn sm ${statusFilter === s ? 'accent' : ''}`} onClick={() => setStatusFilter(s)}>{label}</button>
             ))}
           </div>
-          <AdminOrdersGrouped rows={rows} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} />
+          <AdminOrdersGrouped rows={rows} providers={providers} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} onChange={load} />
         </>
       ) : tab === 'providers' ? (
         <>
@@ -230,7 +229,7 @@ export default function Admin() {
   )
 }
 
-function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
+function AdminOrdersGrouped({ rows, providers, tipoFilter, statusFilter, statusLabel, onChange }) {
   // Filtrar por tipo y status, luego agrupar por refugio
   const filtradas = rows.filter(r =>
     (tipoFilter === 'todos' || r.order_type === tipoFilter) &&
@@ -258,7 +257,7 @@ function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
     <>
       <div className="shelter-groups">
         {pag.pageItems.map((g, i) => (
-          <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} />
+          <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} providers={providers} onChange={onChange} />
         ))}
       </div>
       <Pagination page={pag.page} totalPages={pag.totalPages} setPage={pag.setPage} total={pag.total} />
@@ -266,11 +265,11 @@ function AdminOrdersGrouped({ rows, tipoFilter, statusFilter, statusLabel }) {
   )
 }
 
-function AdminShelterRow({ grupo, statusLabel }) {
+function AdminShelterRow({ grupo, statusLabel, providers, onChange }) {
   const [open, setOpen] = useState(false)
   const toast = useToast()
 
-  async function compartirPedido(id, nombre) {
+  async function compartirPedido(id) {
     const url = `${window.location.origin}/pedido/${id}`
     try {
       await navigator.clipboard.writeText(url)
@@ -292,26 +291,80 @@ function AdminShelterRow({ grupo, statusLabel }) {
       </button>
       {open && (
         <div className="shelter-group-body">
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr><th>Estado</th><th>Tipo</th><th>Detalle</th><th>Proveedor</th><th>Creado</th><th>Entregado</th><th>Compartir</th></tr>
-              </thead>
-              <tbody>
-                {grupo.orders.map(r => (
-                  <tr key={r.id}>
-                    <td><span className={`badge ${r.status}`}>{statusLabel[r.status]}</span></td>
-                    <td>{r.order_type === 'insumos' ? '📦 Insumos' : '🍽️ Comida'}</td>
-                    <td>{r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}</td>
-                    <td>{r.provider_name || '—'}</td>
-                    <td className="muted">{fmtDate(r.created_at)}</td>
-                    <td className="muted">{r.done_at ? fmtDate(r.done_at) : '—'}</td>
-                    <td><button className="btn sm" onClick={() => compartirPedido(r.id, r.shelter_name)}>🔗</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {grupo.orders.map(r => (
+            <AdminOrderManageRow key={r.id} r={r} statusLabel={statusLabel} providers={providers}
+              onChange={onChange} onShare={() => compartirPedido(r.id)} toast={toast} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toast }) {
+  const [editing, setEditing] = useState(false)
+  const [status, setStatus] = useState(r.status)
+  const [provId, setProvId] = useState(r.claimed_by || '')
+  const [busy, setBusy] = useState(false)
+
+  async function guardar() {
+    setBusy(true)
+    const prov = providers.find(p => p.id === provId)
+    const patch = { status }
+    // Sincronizar el proveedor asignado con el status
+    if (provId) {
+      patch.claimed_by = provId
+      patch.claimed_by_name = prov?.name || null
+      if (status === 'pending') patch.status = 'progress'  // si hay proveedor, no puede estar pendiente
+    } else {
+      patch.claimed_by = null
+      patch.claimed_by_name = null
+    }
+    if (patch.status === 'done' && !r.done_at) patch.done_at = new Date().toISOString()
+    if (patch.status === 'progress' && !r.progress_at) patch.progress_at = new Date().toISOString()
+
+    const { error } = await supabase.from('orders').update(patch).eq('id', r.id)
+    setBusy(false)
+    if (error) { toast('No se pudo actualizar el pedido.', 'error'); return }
+    toast('Pedido actualizado.', 'success')
+    setEditing(false)
+    onChange && onChange()
+  }
+
+  return (
+    <div className="admin-order-row">
+      <div className="admin-order-main">
+        <span className={`badge ${r.status}`}>{statusLabel[r.status]}</span>
+        <span className="admin-order-type">{r.order_type === 'insumos' ? '📦' : '🍽️'}</span>
+        <span className="admin-order-detail">
+          {r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}
+        </span>
+        <span className="admin-order-prov">{r.provider_name || 'Sin asignar'}</span>
+        <span className="admin-order-actions">
+          <button className="btn sm" onClick={onShare} title="Compartir">🔗</button>
+          <button className="btn sm" onClick={() => setEditing(e => !e)}>{editing ? 'Cerrar' : 'Gestionar'}</button>
+        </span>
+      </div>
+
+      {editing && (
+        <div className="admin-order-edit">
+          <div className="field">
+            <label>Estado</label>
+            <select value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="pending">Pendiente</option>
+              <option value="progress">En progreso</option>
+              <option value="done">Entregado</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
           </div>
+          <div className="field">
+            <label>Proveedor asignado</label>
+            <select value={provId} onChange={e => setProvId(e.target.value)}>
+              <option value="">— Sin proveedor —</option>
+              {providers.map(p => <option key={p.id} value={p.id}>{p.name} ({p.estado || 's/e'})</option>)}
+            </select>
+          </div>
+          <button className="btn sm primary" onClick={guardar} disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}</button>
         </div>
       )}
     </div>
