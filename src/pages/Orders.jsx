@@ -27,6 +27,11 @@ export default function Orders() {
   const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
 
+  // El admin gestiona todo desde /admin; la página principal le es redundante.
+  useEffect(() => {
+    if (isAdmin) navigate('/admin', { replace: true })
+  }, [isAdmin, navigate])
+
   const load = useCallback(async () => {
     const [{ data: ord }, { data: shl }] = await Promise.all([
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
@@ -57,13 +62,13 @@ export default function Orders() {
     setMisPedidos(data || [])
   }, [profile?.id])
 
-  // Resumen de refugios con pedidos activos (vista agrupada: proveedor o admin)
+  // Resumen de refugios con pedidos activos (vista agrupada: solo proveedor)
   useEffect(() => {
-    if (!isProvider && !isAdmin) return
+    if (!isProvider) return
     supabase.rpc('refugios_con_pedidos_activos').then(({ data }) => {
       setResumenRefugios(data || [])
     })
-  }, [isProvider, isAdmin])
+  }, [isProvider])
 
   // Conteo de refugios y proveedores registrados (para el hero del home)
   useEffect(() => {
@@ -181,7 +186,7 @@ export default function Orders() {
     ? [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']]
     : [['all', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados']]
 
-  const agrupado = isProvider || isAdmin   // vista agrupada por refugio
+  const agrupado = isProvider   // vista agrupada por refugio (solo proveedores)
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
   // Resumen de refugios (agrupado): filtrar por estado/status y ordenar por cercanía
