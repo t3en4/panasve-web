@@ -123,15 +123,41 @@ export default function NewOrder() {
 
     try {
       if (editing) {
+        // Editar mantiene el pedido como está (un solo pedido)
         const { error } = await supabase.from('orders').update(payload).eq('id', id)
         if (error) throw error
         toast('Pedido actualizado.')
+        navigate('/')
+      } else if (type === 'insumos') {
+        // Cada insumo se vuelve su propio pedido (con su tracking)
+        const validItems = items
+          .filter(i => i.name.trim() && parseFloat(i.qty) > 0)
+          .map(i => ({ name: i.name.trim(), qty: parseFloat(i.qty) }))
+        const filas = validItems.map(it => ({
+          ...payload, items: [it], status: 'pending',
+        }))
+        const { error } = await supabase.from('orders').insert(filas)
+        if (error) throw error
+        // Notificación agrupada: UN solo correo con todos los items
+        try {
+          await supabase.functions.invoke('notify-nuevos-pedidos', {
+            body: { shelter_id: shelter.id, items: validItems.map(i => `${i.name}${i.qty ? ` (${i.qty})` : ''}`) },
+          })
+        } catch (e) { console.error('notify error', e) }
+        toast(`¡${filas.length} ${filas.length === 1 ? 'pedido publicado' : 'pedidos publicados'}! Los panas pueden tomarlos por separado.`)
+        navigate('/')
       } else {
+        // Comida: un solo pedido
         const { error } = await supabase.from('orders').insert({ ...payload, status: 'pending' })
         if (error) throw error
+        try {
+          await supabase.functions.invoke('notify-nuevos-pedidos', {
+            body: { shelter_id: shelter.id, items: [`Comida para ${payload.people} personas (${(payload.meals || []).join(', ')})`] },
+          })
+        } catch (e) { console.error('notify error', e) }
         toast('¡Pedido publicado! Los panas cercanos pueden verlo ahora.')
+        navigate('/')
       }
-      navigate('/')
     } catch (e) {
       console.error(e)
       toast('Hubo un error al guardar. Intenta de nuevo.', 'error')
@@ -198,19 +224,21 @@ export default function NewOrder() {
       ) : (
         <div className="card">
           <div className="card-title" style={{ marginBottom: 4 }}>Lista de insumos</div>
-          <div className="card-sub" style={{ marginBottom: 16 }}>Agrega cada insumo con su cantidad (máximo {MAX_ITEMS}).</div>
+          <div className="card-sub" style={{ marginBottom: 16 }}>Agrega cada insumo con su cantidad (máximo {MAX_ITEMS}). Cada insumo se publica como un pedido independiente, para que distintos proveedores puedan tomar lo que cada uno pueda aportar.</div>
           <div className="items-list">
             {items.map((it, i) => (
               <div className="item-row" key={i}>
                 <input className="item-name" value={it.name} onChange={e => setItem(i, 'name', e.target.value)} placeholder="Insumo (ej: Agua, Arroz, Pañales)" />
                 <input className="item-qty" type="number" min="0" value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="Cant." />
-                <button className="item-remove" onClick={() => removeItem(i)} aria-label="Quitar insumo">✕</button>
+                {!editing && items.length > 1 && <button className="item-remove" onClick={() => removeItem(i)} aria-label="Quitar insumo">✕</button>}
               </div>
             ))}
           </div>
-          <button className="btn sm" style={{ marginTop: 12 }} onClick={addItem} disabled={items.length >= MAX_ITEMS}>
-            + Agregar insumo {items.length >= MAX_ITEMS && '(máx alcanzado)'}
-          </button>
+          {!editing && (
+            <button className="btn sm" style={{ marginTop: 12 }} onClick={addItem} disabled={items.length >= MAX_ITEMS}>
+              + Agregar insumo {items.length >= MAX_ITEMS && '(máx alcanzado)'}
+            </button>
+          )}
           <div className="form-grid" style={{ marginTop: 16 }}>
             <div className="field"><label>Fecha del pedido</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
