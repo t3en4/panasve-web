@@ -602,3 +602,30 @@ table.data tr:last-child td { border-bottom: none; }
 .contrib-form { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
 .contrib-form input { flex: 1; max-width: 220px; }
 .contrib-complete { margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--accent-deep); }
+
+/* --- ShelterGroup: info compartida + líneas de item --- */
+.sg-shared { padding: 14px 16px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 10px; }
+.sg-shared-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 13.5px; color: var(--text-secondary); }
+.sg-shared-full { grid-column: 1 / -1; }
+.sg-shared .label { color: var(--text-muted); margin-right: 4px; }
+.sg-shared-map { display: inline-block; margin-top: 10px; font-size: 13.5px; color: var(--accent-deep); font-weight: 500; }
+
+.sg-items { display: flex; flex-direction: column; }
+.sg-item { border-top: 1px solid var(--border); }
+.sg-item:first-child { border-top: none; }
+.sg-item-main { display: flex; align-items: center; gap: 10px; padding: 10px 4px; flex-wrap: wrap; }
+.sg-item-name { flex: 1; min-width: 120px; font-size: 14px; color: var(--text); }
+.sg-item-actions { display: flex; align-items: center; gap: 6px; }
+.sg-item-detail { padding: 4px 4px 14px 4px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-secondary); }
+.sg-item-detail .label { color: var(--text-muted); margin-right: 4px; }
+
+/* Botón extra pequeño para las líneas de item */
+.btn.xs { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
+.btn.xs.sg-expand { padding: 4px 9px; font-weight: 600; }
+
+/* Progreso inline de comida en la línea de item */
+.sg-progress { display: inline-flex; align-items: center; gap: 7px; margin-left: 10px; vertical-align: middle; }
+.sg-progress-track { width: 70px; height: 8px; background: #e7ded0; border-radius: 6px; overflow: hidden; display: inline-block; }
+.sg-progress-fill { display: block; height: 100%; background: var(--terracota); border-radius: 6px; transition: width 0.3s ease; }
+.sg-progress-fill.done { background: var(--accent); }
+.sg-progress-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
