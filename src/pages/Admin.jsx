@@ -229,7 +229,7 @@ export default function Admin() {
   )
 }
 
-function AdminOrdersGrouped({ rows, providers, tipoFilter, statusFilter, statusLabel, onChange }) {
+function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilter, statusLabel, onChange }) {
   // Filtrar por tipo y status, luego agrupar por refugio
   const filtradas = rows.filter(r =>
     (tipoFilter === 'todos' || r.order_type === tipoFilter) &&
