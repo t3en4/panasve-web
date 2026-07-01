@@ -8,7 +8,7 @@ import { StatusDot, StatusLegend } from '../components/StatusDot'
 import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
-  const { isAdmin, setPreviewRole } = useAuth()
+  const { isAdmin, setPreviewRole, setPreviewUser } = useAuth()
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [providers, setProviders] = useState([])
@@ -193,7 +193,7 @@ export default function Admin() {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th></tr>
+                <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th><th></th></tr>
               </thead>
               <tbody>
                 {pagProv.pageItems.map(p => (
@@ -201,9 +201,10 @@ export default function Admin() {
                     <td>{p.name}</td><td>{providerTypeLabel(p.provider_type)}</td><td>{p.estado || '—'}</td>
                     <td>{p.email}</td><td>{p.phone || '—'}</td><td>{p.instagram || '—'}</td>
                     <td className="muted">{fmtDate(p.created_at)}</td>
+                    <td><button className="btn xs" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(p.id); navigate('/') }}>👁️ Ver como</button></td>
                   </tr>
                 ))}
-                {providers.length === 0 && <tr><td colSpan="7" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
+                {providers.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -214,7 +215,7 @@ export default function Admin() {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Solicitante</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
+                <tr><th>Solicitante</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th><th></th></tr>
               </thead>
               <tbody>
                 {pagShel.pageItems.map(s => (
@@ -222,9 +223,10 @@ export default function Admin() {
                     <td>{s.name}</td><td>{shelterTypeLabel(s.shelter_type)}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
                     <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
                     <td className="muted">{fmtDate(s.created_at)}</td>
+                    <td>{s.owner_id && <button className="btn xs" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(s.owner_id); navigate('/') }}>👁️ Ver como</button>}</td>
                   </tr>
                 ))}
-                {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin solicitantes aún.</td></tr>}
+                {shelters.length === 0 && <tr><td colSpan="9" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin solicitantes aún.</td></tr>}
               </tbody>
             </table>
           </div>
