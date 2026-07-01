@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, distanceKm } from '../lib/supabase'
 import { ESTADOS } from '../lib/constants'
@@ -25,6 +25,7 @@ export default function Orders() {
   const [estadoFilter, setEstadoFilter] = useState('all')
   const [resumenRefugios, setResumenRefugios] = useState([])
   const [misPedidos, setMisPedidos] = useState(null)   // null = no cargado aún
+  const autoTabRef = useRef(false)   // para fijar la pestaña inicial solo una vez
   const [misStatus, setMisStatus] = useState('all')     // all | progress | done
   const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
@@ -63,6 +64,17 @@ export default function Orders() {
       .order('created_at', { ascending: false })
     setMisPedidos(data || [])
   }, [profile?.id])
+
+  // Al entrar como proveedor: cargar sus pedidos y, si tiene asignados,
+  // mostrar "Mis pedidos" por defecto (solo la primera vez).
+  useEffect(() => {
+    if (!isProvider) return
+    if (misPedidos === null) { cargarMisPedidos(); return }
+    if (!autoTabRef.current) {
+      autoTabRef.current = true
+      if (misPedidos.length > 0) setView('mios')
+    }
+  }, [isProvider, misPedidos, cargarMisPedidos])
 
   // Resumen de refugios con pedidos activos (vista agrupada: solo proveedor)
   useEffect(() => {
