@@ -358,14 +358,25 @@ export default function Orders() {
 
           {/* Pestañas */}
           <div className="view-tabs">
-            {isProvider ? (
-              <>
-                <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Disponibles</button>
-                <button className={`view-tab ${view === 'mios' ? 'active' : ''}`}
-                  onClick={() => { setView('mios'); if (misPedidos === null) cargarMisPedidos() }}>✓ Mis pedidos</button>
-                <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
-              </>
-            ) : (
+            {isProvider ? (() => {
+              const tieneMios = (misPedidos?.length || 0) > 0
+              const destacar = tieneMios && view !== 'mios'   // destello hasta que la abran
+              const misBtn = (
+                <button key="mios" className={`view-tab ${view === 'mios' ? 'active' : ''} ${destacar ? 'flash' : ''}`}
+                  onClick={() => { setView('mios'); if (misPedidos === null) cargarMisPedidos() }}>
+                  {destacar && <span className="tab-dot" aria-hidden="true" />}✓ Mis pedidos
+                  {tieneMios && <span className="tab-count">{misPedidos.length}</span>}
+                </button>
+              )
+              const dispBtn = (
+                <button key="disp" className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Disponibles</button>
+              )
+              const mapaBtn = (
+                <button key="mapa" className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+              )
+              // Si tiene pedidos asignados, "Mis pedidos" va primero
+              return tieneMios ? <>{misBtn}{dispBtn}{mapaBtn}</> : <>{dispBtn}{misBtn}{mapaBtn}</>
+            })() : (
               <>
                 <button className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Lista</button>
                 <button className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
