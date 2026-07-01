@@ -400,9 +400,10 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
 
 function MensajePanel({ shelters, providers }) {
   const toast = useToast()
-  const [modo, setModo] = useState('uno')   // uno | varios
+  const [modo, setModo] = useState('uno')   // uno | varios | externos
   const [tipo, setTipo] = useState('todos')
   const [dest, setDest] = useState('')
+  const [extEmails, setExtEmails] = useState('')   // correos externos pegados
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
@@ -461,8 +462,33 @@ function MensajePanel({ shelters, providers }) {
   else if (audience === 'proveedores') totalMasivo = conEmail(providers).length
   else if (audience === 'proveedor_tipo') totalMasivo = conEmail(providers).filter(p => p.provider_type === provTipo).length
 
-  async function enviarMasivo() {
+  // Correos externos: parsear la lista pegada (separada por coma, espacio o salto de línea)
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const extLista = extEmails.split(/[\s,;]+/).map(e => e.trim()).filter(Boolean)
+  const extValidos = [...new Set(extLista.filter(e => EMAIL_RE.test(e)))]
+  const extInvalidos = extLista.filter(e => !EMAIL_RE.test(e))
+
+  async function enviarExternos() {
     if (!subject.trim() || !body.trim()) { toast('Completa asunto y mensaje.', 'error'); return }
+    if (extValidos.length === 0) { toast('Ingresa al menos un correo válido.', 'error'); return }
+    if (extInvalidos.length > 0 && !window.confirm(`Hay ${extInvalidos.length} correo(s) con formato inválido que se omitirán:\n${extInvalidos.join(', ')}\n\n¿Continuar con los ${extValidos.length} válidos?`)) return
+    if (!window.confirm(`Vas a enviar este mensaje a ${extValidos.length} correo(s) externo(s). ¿Continuar?`)) return
+    setBusy(true)
+    let ok = 0, fail = 0
+    for (const email of extValidos) {
+      try {
+        const { data, error } = await supabase.functions.invoke('admin-message', {
+          body: { to_email: email, subject: subject.trim(), body: body.trim() },
+        })
+        if (error || data?.error) fail++; else ok++
+      } catch { fail++ }
+    }
+    setBusy(false)
+    if (ok > 0) { toast(`Enviado a ${ok} correo(s)${fail ? `, ${fail} fallaron` : ''}.`, fail ? 'error' : 'success'); setSubject(''); setBody(''); setExtEmails(''); cargarHistorial() }
+    else toast('No se pudo enviar a ningún correo.', 'error')
+  }
+
+  async function enviarMasivo() {    if (!subject.trim() || !body.trim()) { toast('Completa asunto y mensaje.', 'error'); return }
     if (totalMasivo === 0) { toast('No hay destinatarios para esa selección.', 'error'); return }
     if (!window.confirm(`Vas a enviar este mensaje a ${totalMasivo} ${totalMasivo === 1 ? 'persona' : 'personas'}. ¿Continuar?`)) return
     setBusy(true)
@@ -503,10 +529,11 @@ function MensajePanel({ shelters, providers }) {
         <div className="filter-row" style={{ marginBottom: 16 }}>
           <button className={`btn sm ${modo === 'uno' ? 'accent' : ''}`} onClick={() => setModo('uno')}>A un usuario</button>
           <button className={`btn sm ${modo === 'varios' ? 'accent' : ''}`} onClick={() => setModo('varios')}>A varios (masivo)</button>
+          <button className={`btn sm ${modo === 'externos' ? 'accent' : ''}`} onClick={() => setModo('externos')}>A correos externos</button>
         </div>
 
         <div className="msg-form">
-          {modo === 'uno' ? (
+          {modo === 'uno' && (
             <div className="msg-row">
               <div className="field"><label>Tipo de usuario</label>
                 <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
@@ -522,7 +549,8 @@ function MensajePanel({ shelters, providers }) {
                 </select>
               </div>
             </div>
-          ) : (
+          )}
+          {modo === 'varios' && (
             <div className="msg-row">
               <div className="field"><label>Enviar a</label>
                 <select value={audience} onChange={e => setAudience(e.target.value)}>
@@ -541,17 +569,39 @@ function MensajePanel({ shelters, providers }) {
               )}
             </div>
           )}
+          {modo === 'externos' && (
+            <div className="field"><label>Correos externos <span className="req">*</span></label>
+              <textarea value={extEmails} onChange={e => setExtEmails(e.target.value)} rows={3}
+                placeholder="Pega uno o varios correos, separados por coma, espacio o salto de línea&#10;ej: refugio@ejemplo.com, chef@ejemplo.com" />
+              <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                {extValidos.length > 0 && <span style={{ color: 'var(--success)' }}>{extValidos.length} correo(s) válido(s). </span>}
+                {extInvalidos.length > 0 && <span style={{ color: 'var(--danger)' }}>{extInvalidos.length} con formato inválido (se omiten). </span>}
+                No hace falta que estén registrados en PanasVE.
+              </div>
+            </div>
+          )}
           <div className="field"><label>Asunto <span className="req">*</span></label>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ej: Actualización sobre tu pedido" /></div>
           <div className="field"><label>Mensaje <span className="req">*</span></label>
             <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} placeholder="Escribe tu mensaje aquí…" style={{ minHeight: 140 }} /></div>
         </div>
 
-        {modo === 'uno' ? (
+        {modo === 'uno' && (
           <button className="btn primary" style={{ marginTop: 14 }} onClick={enviar} disabled={busy}>
             {busy ? 'Enviando…' : 'Enviar mensaje'}
           </button>
-        ) : (
+        )}
+        {modo === 'externos' && (
+          <div style={{ marginTop: 14 }}>
+            <button className="btn primary" onClick={enviarExternos} disabled={busy}>
+              {busy ? 'Enviando…' : `Enviar a ${extValidos.length} correo(s) externo(s)`}
+            </button>
+            <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+              Se enviará un correo individual a cada dirección, con el formato de PanasVE. Las respuestas llegan a panass.venezuela@gmail.com.
+            </div>
+          </div>
+        )}
+        {modo === 'varios' && (
           <div style={{ marginTop: 14 }}>
             <button className="btn primary" onClick={enviarMasivo} disabled={busy}>
               {busy ? 'Enviando…' : `Enviar a ${totalMasivo} ${totalMasivo === 1 ? 'persona' : 'personas'}`}
