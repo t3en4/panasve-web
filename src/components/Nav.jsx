@@ -22,7 +22,7 @@ export default function Nav() {
   return (
     <nav className="nav">
       <NavLink to="/" className="nav-brand" onClick={close}>
-        <img src="/logo.png" alt="PanasVE" className="nav-logo-img" />
+        <span className="nav-flag" aria-hidden="true">🇻🇪</span>
         <span>PanasVE</span>
       </NavLink>
 
