@@ -24,6 +24,9 @@ export default function FoodContributions({ order, onChanged }) {
 
   const total = contribs.reduce((s, c) => s + (c.amount || 0), 0)
   const meta = order.people || 0
+  const esVol = order.order_type === 'voluntarios'
+  const uni = esVol ? 'voluntarios' : 'comidas'
+  const uniVerbo = esVol ? 'Anotar voluntarios' : 'Aportar comidas'
   const pct = meta > 0 ? Math.min(100, Math.round((total / meta) * 100)) : 0
   const falta = Math.max(0, meta - total)
   const cubierto = total >= meta && meta > 0
@@ -33,16 +36,16 @@ export default function FoodContributions({ order, onChanged }) {
   async function aportar() {
     if (isPreview) return
     const n = parseInt(amount)
-    if (!n || n < 1) { toast('Indica cuántas comidas puedes aportar.', 'error'); return }
+    if (!n || n < 1) { toast(`Indica cuántos ${uni} puedes aportar.`, 'error'); return }
     if (n > falta) {
-      if (!window.confirm(`Solo faltan ${falta} comidas. ¿Aportar ${falta} en lugar de ${n}?`)) return
+      if (!window.confirm(`Solo faltan ${falta} ${uni}. ¿Aportar ${falta} en lugar de ${n}?`)) return
     }
     const aporte = Math.min(n, falta)
     setBusy(true)
     const { error } = await supabase.rpc('aportar_comida', { p_order_id: order.id, p_amount: aporte })
     setBusy(false)
     if (error) { toast(error.message || 'No se pudo registrar el aporte.', 'error'); return }
-    toast(`¡Gracias! Registramos tu aporte de ${aporte} comidas.`)
+    toast(`¡Gracias! Registramos tu aporte de ${aporte} ${uni}.`)
     setAmount('')
     await cargar()
     onChanged && onChanged()
@@ -80,7 +83,7 @@ export default function FoodContributions({ order, onChanged }) {
         <div className="contrib-bar-track">
           <div className={`contrib-bar-fill ${todoEntregado ? 'done' : ''}`} style={{ width: `${pct}%` }} />
         </div>
-        <span className="contrib-bar-label">{total} de {meta} comidas ({pct}%)</span>
+        <span className="contrib-bar-label">{total} de {meta} {uni} ({pct}%)</span>
       </div>
 
       {/* Estado global */}
@@ -88,7 +91,7 @@ export default function FoodContributions({ order, onChanged }) {
         <div className="contrib-state">✓ Cubierto · pendiente de entrega</div>
       )}
       {todoEntregado && (
-        <div className="contrib-complete">✓ ¡Entregado! {total} comidas cubiertas y entregadas.</div>
+        <div className="contrib-complete">✓ ¡Completo! {total} {uni} cubiertos.</div>
       )}
 
       {/* Lista de aportes */}
@@ -99,7 +102,7 @@ export default function FoodContributions({ order, onChanged }) {
             return (
               <li key={c.id}>
                 <span>
-                  {c.provider_name || 'Proveedor'} — <strong>{c.amount}</strong> comidas
+                  {c.provider_name || 'Proveedor'} — <strong>{c.amount}</strong> {uni}
                   {c.delivered_at
                     ? <span className="contrib-tag entregado">entregado</span>
                     : <span className="contrib-tag pendiente">pendiente</span>}
@@ -124,9 +127,9 @@ export default function FoodContributions({ order, onChanged }) {
       {isProvider && !isPreview && !cubierto && (
         <div className="contrib-form">
           <input type="number" min="1" max={falta} value={amount}
-            onChange={e => setAmount(e.target.value)} placeholder={`¿Cuántas? (faltan ${falta})`} />
+            onChange={e => setAmount(e.target.value)} placeholder={esVol ? `¿Cuántos? (faltan ${falta})` : `¿Cuántas? (faltan ${falta})`} />
           <button className="btn sm primary" onClick={aportar} disabled={busy}>
-            {busy ? 'Registrando…' : 'Aportar comidas'}
+            {busy ? 'Registrando…' : uniVerbo}
           </button>
         </div>
       )}

@@ -63,9 +63,12 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
 
   const mapsUrl = oLat != null ? `https://maps.google.com/?q=${oLat},${oLng}` : null
   const isInsumos = order.order_type === 'insumos'
+  const esVol = order.order_type === 'voluntarios'
   // Resumen corto para la vista colapsada
   const resumen = isInsumos
     ? `${(order.items || []).length} insumo${(order.items || []).length === 1 ? '' : 's'}`
+    : esVol
+    ? `${order.people} voluntarios`
     : `${order.people} pers. · ${(order.meals || []).join(', ')}`
 
   const hasActions = profile && !isPreview && (
@@ -80,7 +83,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
         <span className="order-chevron">{expanded ? '▾' : '▸'}</span>
         <StatusDot status={order.status} />
         <span className="order-head-name">{shelter?.name || 'Solicitante'}</span>
-        <span className={`type-pill ${isInsumos ? 'insumos' : 'comida'}`}>{isInsumos ? '📦' : '🍽️'}</span>
+        <span className={`type-pill ${isInsumos ? 'insumos' : esVol ? 'voluntarios' : 'comida'}`}>{isInsumos ? '📦' : esVol ? '🙋' : '🍽️'}</span>
         <span className="order-head-summary">{resumen}</span>
         {dist && <span className="dist-pill">{dist} km</span>}
       </button>
@@ -100,6 +103,11 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
               {(order.items || []).map((it, i) => (
                 <div className="insumo-line" key={i}><span>{it.name}</span><span className="insumo-qty">{it.qty}</span></div>
               ))}
+            </div>
+          ) : esVol ? (
+            <div className="order-info">
+              <div><span className="label">Voluntarios:</span>{order.people}</div>
+              {order.purpose && <div style={{ gridColumn: '1 / -1' }}><span className="label">Propósito:</span>{order.purpose}</div>}
             </div>
           ) : (
             <div className="order-info">

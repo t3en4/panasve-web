@@ -53,14 +53,14 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
     ])
     if (s) setShelterObj(s)
 
-    // Para los pedidos de comida, traer la suma de aportes (progreso inline)
-    const comidaIds = ordersData.filter(o => o.order_type === 'comida').map(o => o.id)
-    if (comidaIds.length) {
+    // Para comida y voluntarios, traer la suma de aportes (progreso inline)
+    const aporteIds = ordersData.filter(o => o.order_type === 'comida' || o.order_type === 'voluntarios').map(o => o.id)
+    if (aporteIds.length) {
       const { data: contribs } = await supabase.from('order_contributions')
-        .select('order_id, amount').in('order_id', comidaIds)
+        .select('order_id, amount').in('order_id', aporteIds)
       const sums = {}
       for (const c of (contribs || [])) sums[c.order_id] = (sums[c.order_id] || 0) + (c.amount || 0)
-      for (const o of ordersData) if (o.order_type === 'comida') o.contributed = sums[o.id] || 0
+      for (const o of ordersData) if (o.order_type === 'comida' || o.order_type === 'voluntarios') o.contributed = sums[o.id] || 0
     }
 
     setOrders(ordersData)
@@ -74,6 +74,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
   else if (statusFilter === 'done') count = resumen.done_count
   else count = tipoFilter === 'comida' ? resumen.comida_count
     : tipoFilter === 'insumos' ? resumen.insumos_count
+    : tipoFilter === 'voluntarios' ? resumen.voluntarios_count
     : resumen.total_count
   if (Number(count) === 0) return null
 
@@ -142,19 +143,22 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, is
   onClaim, onDeliver, onRelease, onCancel, onChanged }) {
   const [showNotes, setShowNotes] = useState(false)
   const isInsumos = order.order_type === 'insumos'
+  const esVol = order.order_type === 'voluntarios'
   const mine = profile && order.claimed_by === profile.id
 
   const label = isInsumos
     ? (order.items?.[0]?.name || '1 insumo')
+    : esVol
+    ? `Voluntarios · ${order.people}`
     : `Comida · ${order.people} personas`
 
-  // Progreso de comida (inline)
+  // Progreso de comida/voluntarios (inline)
   const meta = order.people || 0
   const cubierto = order.contributed || 0
   const pct = meta > 0 ? Math.min(100, Math.round((cubierto / meta) * 100)) : 0
 
   const qty = isInsumos ? order.items?.[0]?.qty : null
-  const tieneDetalle = qty || order.allergies || order.notes
+  const tieneDetalle = qty || order.allergies || order.notes || (esVol && order.purpose)
 
   async function compartir() {
     const url = `${window.location.origin}/pedido/${order.id}`
@@ -199,7 +203,8 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, is
       {showNotes && (
         <div className="sg-item-detail">
           {qty ? <div><span className="label">Cantidad:</span> {qty}</div> : null}
-          {!isInsumos && (order.meals || []).length > 0 && <div><span className="label">Comidas:</span> {(order.meals || []).join(', ')}</div>}
+          {esVol && order.purpose && <div><span className="label">Propósito:</span> {order.purpose}</div>}
+          {!isInsumos && !esVol && (order.meals || []).length > 0 && <div><span className="label">Comidas:</span> {(order.meals || []).join(', ')}</div>}
           {order.allergies && <div><span className="label" style={{ color: 'var(--danger)' }}>⚠️ Alergias:</span> {order.allergies}</div>}
           {order.notes && <div><span className="label">Notas:</span> {order.notes}</div>}
           <div className="muted" style={{ fontSize: 12 }}>Pedido: {fmtDate(order.created_at)}</div>

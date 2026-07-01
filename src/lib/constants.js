@@ -30,6 +30,15 @@ export const SHELTER_TYPES = [
 export const shelterTypeLabel = (v) =>
   SHELTER_TYPES.find(t => t.value === v)?.label || 'Solicitante'
 
+// Tipos de pedido (etiqueta + icono)
+export const ORDER_TYPE_META = {
+  comida: { label: 'Comida', icon: '🍽️' },
+  insumos: { label: 'Insumos', icon: '📦' },
+  voluntarios: { label: 'Voluntarios', icon: '🙋' },
+}
+export const orderTypeLabel = (v) => ORDER_TYPE_META[v]?.label || 'Pedido'
+export const orderTypeIcon = (v) => ORDER_TYPE_META[v]?.icon || '📋'
+
 // Reglas de oro para manejo seguro de alimentos
 export const REGLAS_ORO = [
   { titulo: 'Tiempo', texto: 'Máximo 2 horas fuera de frío (1 hora si hace mucho calor, por encima de 32°C).' },

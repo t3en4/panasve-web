@@ -256,7 +256,10 @@ export default function Orders() {
       const lng = o.lng != null ? o.lng : s?.lng
       if (lat == null) return null
       const resumen = o.order_type === 'insumos'
-        ? `${(o.items || []).length} insumos` : `${o.people} personas · ${(o.meals || []).join(', ')}`
+        ? `${(o.items || []).length} insumos`
+        : o.order_type === 'voluntarios'
+        ? `${o.people} voluntarios`
+        : `${o.people} personas · ${(o.meals || []).join(', ')}`
       return { lat, lng, title: s?.name || 'Solicitante', subtitle: resumen }
     }).filter(Boolean)
   } else if (isShelter) {
@@ -278,7 +281,10 @@ export default function Orders() {
       const lng = o.lng != null ? o.lng : s?.lng
       if (lat == null) return null
       const resumen = o.order_type === 'insumos'
-        ? `${(o.items || []).length} insumos` : `${o.people || ''} personas`
+        ? `${(o.items || []).length} insumos`
+        : o.order_type === 'voluntarios'
+        ? `${o.people || ''} voluntarios`
+        : `${o.people || ''} personas`
       return {
         lat, lng, color: STATUS_COLOR[o.status],
         title: s?.name || 'Pedido',
@@ -441,7 +447,7 @@ export default function Orders() {
           {/* Filtro comida / insumos (vista agrupada: proveedor o admin) */}
           {agrupado && (
             <div className="filter-row">
-              {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
+              {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
                 <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
               ))}
             </div>

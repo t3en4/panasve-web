@@ -22,7 +22,7 @@ export default function NewOrder() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     people: '', date: new Date().toISOString().split('T')[0], notes: '', allergies: '',
-    location: '', coords: '',
+    location: '', coords: '', purpose: '',
   })
 
   // Al crear: pre-llenar la ubicación con la del refugio
@@ -46,7 +46,7 @@ export default function NewOrder() {
       setItems(data.items?.length ? data.items.map(i => ({ name: i.name, qty: String(i.qty) })) : [{ name: '', qty: '' }])
       setForm({
         people: data.people || '', date: data.order_date, notes: data.notes || '', allergies: data.allergies || '',
-        location: data.location || '', coords: data.lat != null ? `${data.lat},${data.lng}` : '',
+        location: data.location || '', coords: data.lat != null ? `${data.lat},${data.lng}` : '', purpose: data.purpose || '',
       })
     })
   }, [editing, id])
@@ -99,6 +99,10 @@ export default function NewOrder() {
       const people = parseInt(form.people)
       if (!people || people < 1) { toast('Indica el número de personas.', 'error'); return }
       if (!meals.length) { toast('Selecciona al menos un tipo de comida.', 'error'); return }
+    } else if (type === 'voluntarios') {
+      const n = parseInt(form.people)
+      if (!n || n < 1) { toast('Indica cuántos voluntarios necesitas.', 'error'); return }
+      if (!form.purpose.trim()) { toast('Describe para qué se necesitan los voluntarios.', 'error'); return }
     } else {
       const valid = items.filter(i => i.name.trim() && parseFloat(i.qty) > 0)
       if (!valid.length) { toast('Agrega al menos un insumo con su cantidad.', 'error'); return }
@@ -119,6 +123,12 @@ export default function NewOrder() {
       payload.meals = meals
       payload.items = null
       payload.allergies = form.allergies || null
+    } else if (type === 'voluntarios') {
+      payload.people = parseInt(form.people)
+      payload.purpose = form.purpose.trim()
+      payload.meals = null
+      payload.items = null
+      payload.allergies = null
     } else {
       payload.people = null
       payload.meals = null
@@ -154,12 +164,15 @@ export default function NewOrder() {
         toast(`¡${filas.length} ${filas.length === 1 ? 'pedido publicado' : 'pedidos publicados'}! Los panas pueden tomarlos por separado.`)
         navigate('/')
       } else {
-        // Comida: un solo pedido
+        // Comida o voluntarios: un solo pedido
         const { error } = await supabase.from('orders').insert({ ...payload, status: 'pending' })
         if (error) throw error
+        const desc = type === 'voluntarios'
+          ? `${payload.people} voluntarios · ${payload.purpose}`
+          : `Comida para ${payload.people} personas (${(payload.meals || []).join(', ')})`
         try {
           await supabase.functions.invoke('notify-nuevos-pedidos', {
-            body: { shelter_id: shelter.id, items: [`Comida para ${payload.people} personas (${(payload.meals || []).join(', ')})`] },
+            body: { shelter_id: shelter.id, items: [desc] },
           })
         } catch (e) { console.error('notify error', e) }
         toast('¡Pedido publicado! Los panas cercanos pueden verlo ahora.')
@@ -194,6 +207,9 @@ export default function NewOrder() {
           <button className={`type-btn ${type === 'insumos' ? 'active' : ''}`} onClick={() => setType('insumos')}>
             📦 Insumos
           </button>
+          <button className={`type-btn ${type === 'voluntarios' ? 'active' : ''}`} onClick={() => setType('voluntarios')}>
+            🙋 Voluntarios
+          </button>
         </div>
       </div>
 
@@ -226,6 +242,22 @@ export default function NewOrder() {
               ))}
             </ul>
             <div className="reglas-nota">{REGLAS_ORO_NOTA}</div>
+          </div>
+        </div>
+      ) : type === 'voluntarios' ? (
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 16 }}>Detalles de voluntarios</div>
+          <div className="form-grid">
+            <div className="field"><label>¿Cuántos voluntarios necesitas? <span className="req">*</span></label>
+              <input type="number" min="1" value={form.people} onChange={e => set('people', e.target.value)} placeholder="Ej: 25" /></div>
+            <div className="field"><label>Fecha</label>
+              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
+            <div className="field full"><label>¿Para qué se necesitan? <span className="req">*</span></label>
+              <textarea value={form.purpose} onChange={e => set('purpose', e.target.value)}
+                placeholder="Ej: Manejar camionetas para llevar insumos a La Guaira; se necesita licencia y vehículo propio." style={{ minHeight: 80 }} /></div>
+          </div>
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
+            Varios voluntarios podrán anotarse por separado hasta cubrir la cantidad.
           </div>
         </div>
       ) : (

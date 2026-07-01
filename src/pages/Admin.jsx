@@ -170,7 +170,7 @@ export default function Admin() {
       ) : tab === 'orders' ? (
         <>
           <div className="filter-row" style={{ marginBottom: 10 }}>
-            {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos']].map(([t, label]) => (
+            {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
               <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
             ))}
           </div>
@@ -334,8 +334,11 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
   const [busy, setBusy] = useState(false)
 
   const isInsumos = r.order_type === 'insumos'
+  const esVol = r.order_type === 'voluntarios'
   const label = isInsumos
     ? (r.items?.[0]?.name || '1 insumo')
+    : esVol
+    ? `Voluntarios · ${r.people}${r.purpose ? ` — ${r.purpose}` : ''}`
     : `Comida · ${r.people} personas${(r.meals || []).length ? ` (${(r.meals || []).join(', ')})` : ''}`
   const qty = isInsumos ? r.items?.[0]?.qty : null
 

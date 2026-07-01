@@ -281,6 +281,7 @@ table.data tr:last-child td { border-bottom: none; }
 .type-pill { font-size: 12px; padding: 2px 9px; border-radius: 12px; font-weight: 500; }
 .type-pill.comida { background: var(--warning-bg); color: var(--warning); }
 .type-pill.insumos { background: var(--terracota-bg); color: var(--terracota); }
+.type-pill.voluntarios { background: var(--accent-bg); color: var(--accent); }
 
 /* Selector de rol en registro */
 .role-option {
