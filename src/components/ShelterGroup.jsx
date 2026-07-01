@@ -176,12 +176,12 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy,
         </span>
         <span className="sg-item-actions">
           {isInsumos && isProvider && order.status === 'pending' && (
-            <button className="btn xs primary" disabled={busy} onClick={() => onClaim(order)}>Tomar</button>
+            <button className="btn xs primary" disabled={busy} onClick={async () => { await onClaim(order); onChanged && onChanged() }}>Tomar</button>
           )}
           {isInsumos && isProvider && order.status === 'progress' && mine && (
             <>
-              <button className="btn xs success" disabled={busy} onClick={() => onDeliver(order)}>Entregado</button>
-              <button className="btn xs" disabled={busy} onClick={() => onRelease(order)}>Liberar</button>
+              <button className="btn xs success" disabled={busy} onClick={async () => { await onDeliver(order); onChanged && onChanged() }}>Entregado</button>
+              <button className="btn xs" disabled={busy} onClick={async () => { await onRelease(order); onChanged && onChanged() }}>Liberar</button>
             </>
           )}
           {!isInsumos && isProvider && order.status !== 'done' && (
