@@ -1,44 +1,5 @@
 :root {
-  /* ===== TEMA OSCURO (por defecto) — verde profundo + acentos verde brillante y dorado ===== */
-  --bg: #14211b;             /* verde casi negro */
-  --bg-elevated: #1c2c24;    /* superficie elevada */
-  --surface: #1c2c24;        /* tarjetas */
-  --surface-2: #23362c;      /* superficie secundaria (inputs, chips) */
-  --border: #2c4034;
-  --border-strong: #3a5344;
-  --text: #f2efe8;           /* crema claro */
-  --text-secondary: #a9bcae; /* verde grisáceo claro */
-  --text-muted: #7d9184;
-  --accent: #5fd897;         /* verde brillante (acento vivo) */
-  --accent-deep: #1f3d2f;    /* verde profundo (marca, headers) */
-  --accent-bg: #2a4335;
-  --gold: #e8b53e;           /* dorado */
-  --gold-bg: #2e2a17;
-  --warning-bg: #2e2a17;
-  --warning: #e8b53e;
-  --success-bg: #22382c;
-  --success: #4fd08a;
-  --danger-bg: #33221c;
-  --danger: #e8843d;
-  --terracota: #e8843d;      /* terracota más vivo para oscuro */
-  --terracota-bg: #33221c;
-  --red: #e8843d;            /* compat */
-  --red-dark: #c2703d;
-  /* superficie del nav y footer */
-  --nav-bg: #0f1813;
-  --nav-text: #f2efe8;
-  --on-accent: #0f1813;      /* texto sobre botones de acento */
-
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.30);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,0.45);
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* ===== TEMA CLARO (al activar el toggle) — la paleta cálida original ===== */
-[data-theme="light"] {
+  /* ===== TEMA CLARO (por defecto) — paleta cálida humanitaria ===== */
   --bg: #f7f3ec;
   --bg-elevated: #ffffff;
   --surface: #ffffff;
@@ -66,8 +27,46 @@
   --nav-bg: #1f3d2f;
   --nav-text: #ffffff;
   --on-accent: #ffffff;
+
+  --radius: 14px;
+  --radius-sm: 10px;
   --shadow: 0 1px 2px rgba(60,50,40,0.04), 0 4px 16px rgba(60,50,40,0.05);
   --shadow-lg: 0 8px 30px rgba(60,50,40,0.10);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ===== TEMA OSCURO (al activar el toggle) — verde profundo + acentos verde brillante y dorado ===== */
+[data-theme="dark"] {
+  --bg: #14211b;
+  --bg-elevated: #1c2c24;
+  --surface: #1c2c24;
+  --surface-2: #23362c;
+  --border: #2c4034;
+  --border-strong: #3a5344;
+  --text: #f2efe8;
+  --text-secondary: #a9bcae;
+  --text-muted: #7d9184;
+  --accent: #5fd897;
+  --accent-deep: #1f3d2f;
+  --accent-bg: #2a4335;
+  --gold: #e8b53e;
+  --gold-bg: #2e2a17;
+  --warning-bg: #2e2a17;
+  --warning: #e8b53e;
+  --success-bg: #22382c;
+  --success: #4fd08a;
+  --danger-bg: #33221c;
+  --danger: #e8843d;
+  --terracota: #e8843d;
+  --terracota-bg: #33221c;
+  --red: #e8843d;
+  --red-dark: #c2703d;
+  --nav-bg: #0f1813;
+  --nav-text: #f2efe8;
+  --on-accent: #0f1813;
+  --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.30);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.45);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -735,3 +734,6 @@ table.data tr:last-child td { border-bottom: none; }
   padding: 6px 8px; border-radius: 8px; opacity: 0.75;
 }
 .pass-toggle:hover { opacity: 1; background: var(--surface-2); }
+
+/* Bandera de Venezuela en el header */
+.nav-flag { font-size: 24px; line-height: 1; display: inline-flex; align-items: center; }
