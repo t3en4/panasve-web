@@ -176,7 +176,7 @@ export default function Admin() {
               <button key={s} className={`btn sm ${statusFilter === s ? 'accent' : ''}`} onClick={() => setStatusFilter(s)}>{label}</button>
             ))}
           </div>
-          <AdminOrdersGrouped rows={rows} providers={providers} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} onChange={load} />
+          <AdminOrdersGrouped rows={rows} providers={providers} shelters={shelters} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} onChange={load} />
         </>
       ) : tab === 'providers' ? (
         <>
@@ -241,7 +241,7 @@ function AdminOrdersGrouped({ rows, providers, tipoFilter, statusFilter, statusL
   for (const r of filtradas) {
     const key = r.shelter_id || r.shelter_name || 'sin-refugio'
     if (!grupos[key]) {
-      grupos[key] = { name: r.shelter_name || 'Sin refugio', estado: r.shelter_estado || r.shelter_location, orders: [] }
+      grupos[key] = { shelter_id: r.shelter_id, name: r.shelter_name || 'Sin refugio', estado: r.shelter_estado || r.shelter_location, orders: [] }
     }
     grupos[key].orders.push(r)
   }
@@ -257,7 +257,8 @@ function AdminOrdersGrouped({ rows, providers, tipoFilter, statusFilter, statusL
     <>
       <div className="shelter-groups">
         {pag.pageItems.map((g, i) => (
-          <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} providers={providers} onChange={onChange} />
+          <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} providers={providers}
+            shelterObj={(shelters || []).find(s => s.id === g.shelter_id)} onChange={onChange} />
         ))}
       </div>
       <Pagination page={pag.page} totalPages={pag.totalPages} setPage={pag.setPage} total={pag.total} />
@@ -265,7 +266,7 @@ function AdminOrdersGrouped({ rows, providers, tipoFilter, statusFilter, statusL
   )
 }
 
-function AdminShelterRow({ grupo, statusLabel, providers, onChange }) {
+function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange }) {
   const [open, setOpen] = useState(false)
   const toast = useToast()
 
@@ -279,6 +280,9 @@ function AdminShelterRow({ grupo, statusLabel, providers, onChange }) {
     }
   }
 
+  const mapsUrl = (shelterObj?.lat != null && shelterObj?.lng != null)
+    ? `https://www.google.com/maps/search/?api=1&query=${shelterObj.lat},${shelterObj.lng}` : null
+
   return (
     <div className={`shelter-group ${open ? 'open' : ''}`}>
       <button className="shelter-group-head" onClick={() => setOpen(o => !o)}>
@@ -291,10 +295,26 @@ function AdminShelterRow({ grupo, statusLabel, providers, onChange }) {
       </button>
       {open && (
         <div className="shelter-group-body">
-          {grupo.orders.map(r => (
-            <AdminOrderManageRow key={r.id} r={r} statusLabel={statusLabel} providers={providers}
-              onChange={onChange} onShare={() => compartirPedido(r.id)} toast={toast} />
-          ))}
+          {/* Info compartida del refugio (una sola vez) */}
+          <div className="sg-shared">
+            <div className="sg-shared-grid">
+              <div><span className="label">Contacto:</span> {shelterObj?.contact || '—'}</div>
+              <div><span className="label">Teléfono:</span> {shelterObj?.phone || '—'}</div>
+              {(shelterObj?.location) && (
+                <div className="sg-shared-full"><span className="label">Ubicación:</span> {shelterObj.location}</div>
+              )}
+              {shelterObj?.instagram && <div><span className="label">Instagram:</span> {shelterObj.instagram}</div>}
+            </div>
+            {mapsUrl && <a className="sg-shared-map" href={mapsUrl} target="_blank" rel="noreferrer">📍 Ver en mapa</a>}
+          </div>
+
+          {/* Una línea por item */}
+          <div className="sg-items">
+            {grupo.orders.map(r => (
+              <AdminOrderManageRow key={r.id} r={r} statusLabel={statusLabel} providers={providers}
+                onChange={onChange} onShare={() => compartirPedido(r.id)} toast={toast} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -307,15 +327,20 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
   const [provId, setProvId] = useState(r.claimed_by || '')
   const [busy, setBusy] = useState(false)
 
+  const isInsumos = r.order_type === 'insumos'
+  const label = isInsumos
+    ? (r.items?.[0]?.name || '1 insumo')
+    : `Comida · ${r.people} personas${(r.meals || []).length ? ` (${(r.meals || []).join(', ')})` : ''}`
+  const qty = isInsumos ? r.items?.[0]?.qty : null
+
   async function guardar() {
     setBusy(true)
     const prov = providers.find(p => p.id === provId)
     const patch = { status }
-    // Sincronizar el proveedor asignado con el status
     if (provId) {
       patch.claimed_by = provId
       patch.claimed_by_name = prov?.name || null
-      if (status === 'pending') patch.status = 'progress'  // si hay proveedor, no puede estar pendiente
+      if (status === 'pending') patch.status = 'progress'
     } else {
       patch.claimed_by = null
       patch.claimed_by_name = null
@@ -332,17 +357,17 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
   }
 
   return (
-    <div className="admin-order-row">
-      <div className="admin-order-main">
+    <div className="sg-item">
+      <div className="sg-item-main">
         <span className={`badge ${r.status}`}>{statusLabel[r.status]}</span>
-        <span className="admin-order-type">{r.order_type === 'insumos' ? '📦' : '🍽️'}</span>
-        <span className="admin-order-detail">
-          {r.order_type === 'insumos' ? `${(r.items || []).length} insumos` : `${r.people} pers. · ${(r.meals || []).join(', ')}`}
+        <span className="sg-item-name">
+          {label}
+          {qty ? <span className="muted" style={{ marginLeft: 6 }}>· {qty}</span> : null}
         </span>
-        <span className="admin-order-prov">{r.provider_name || 'Sin asignar'}</span>
-        <span className="admin-order-actions">
-          <button className="btn sm" onClick={onShare} title="Compartir">🔗</button>
-          <button className="btn sm" onClick={() => setEditing(e => !e)}>{editing ? 'Cerrar' : 'Gestionar'}</button>
+        <span className="sg-item-actions">
+          {r.provider_name && <span className="admin-order-prov">{r.provider_name}</span>}
+          <button className="btn xs" onClick={onShare} title="Compartir">🔗</button>
+          <button className="btn xs primary" onClick={() => setEditing(e => !e)}>{editing ? 'Cerrar' : 'Gestionar'}</button>
         </span>
       </div>
 
