@@ -8,7 +8,7 @@ import { StatusDot, StatusLegend } from '../components/StatusDot'
 import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
-  const { isAdmin, setPreviewRole, setPreviewUser } = useAuth()
+  const { isAdmin, setPreviewUser } = useAuth()
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [providers, setProviders] = useState([])
@@ -92,13 +92,6 @@ export default function Admin() {
   return (
     <div className="content">
       <div className="section-header"><div className="section-title">Panel de administración</div></div>
-
-      <div className="admin-preview">
-        <span className="admin-preview-label">👁️ Ver la app como:</span>
-        <button className="btn sm" onClick={() => { setPreviewRole('provider'); navigate('/') }}>Proveedor</button>
-        <button className="btn sm" onClick={() => { setPreviewRole('shelter'); navigate('/') }}>Solicitante</button>
-        <span className="muted" style={{ fontSize: 12 }}>Modo solo lectura. Podrás volver con un botón.</span>
-      </div>
 
       <div className="filter-row">
         <button className={`btn sm ${tab === 'dashboard' ? 'accent' : ''}`} onClick={() => setTab('dashboard')}>Dashboard</button>
@@ -190,45 +183,45 @@ export default function Admin() {
         </>
       ) : tab === 'providers' ? (
         <>
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Email</th><th>Teléfono</th><th>Instagram</th><th>Registrado</th><th></th></tr>
-              </thead>
-              <tbody>
-                {pagProv.pageItems.map(p => (
-                  <tr key={p.id}>
-                    <td>{p.name}</td><td>{providerTypeLabel(p.provider_type)}</td><td>{p.estado || '—'}</td>
-                    <td>{p.email}</td><td>{p.phone || '—'}</td><td>{p.instagram || '—'}</td>
-                    <td className="muted">{fmtDate(p.created_at)}</td>
-                    <td><button className="btn xs" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(p.id); navigate('/') }}>👁️ Ver como</button></td>
-                  </tr>
-                ))}
-                {providers.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</td></tr>}
-              </tbody>
-            </table>
+          <div className="acct-list">
+            {pagProv.pageItems.map(p => (
+              <div className="acct-row" key={p.id}>
+                <div className="acct-main">
+                  <div className="acct-name">{p.name} <span className="acct-tag">{providerTypeLabel(p.provider_type)}</span></div>
+                  <div className="acct-meta">
+                    <span>📍 {p.estado || '—'}</span>
+                    <span>✉️ {p.email}</span>
+                    {p.phone && <span>📞 {p.phone}</span>}
+                    {p.instagram && <span>📷 {p.instagram}</span>}
+                    <span className="muted">{fmtDate(p.created_at)}</span>
+                  </div>
+                </div>
+                <button className="btn xs acct-view" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(p.id); navigate('/') }}>👁️ Ver como</button>
+              </div>
+            ))}
+            {providers.length === 0 && <div className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</div>}
           </div>
           <Pagination page={pagProv.page} totalPages={pagProv.totalPages} setPage={pagProv.setPage} total={pagProv.total} />
         </>
       ) : tab === 'shelters' ? (
         <>
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr><th>Solicitante</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th><th></th></tr>
-              </thead>
-              <tbody>
-                {pagShel.pageItems.map(s => (
-                  <tr key={s.id}>
-                    <td>{s.name}</td><td>{shelterTypeLabel(s.shelter_type)}</td><td>{s.estado || '—'}</td><td>{s.location || '—'}</td>
-                    <td>{s.contact || '—'}</td><td>{s.phone || '—'}</td><td>{s.email || '—'}</td>
-                    <td className="muted">{fmtDate(s.created_at)}</td>
-                    <td>{s.owner_id && <button className="btn xs" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(s.owner_id); navigate('/') }}>👁️ Ver como</button>}</td>
-                  </tr>
-                ))}
-                {shelters.length === 0 && <tr><td colSpan="9" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin solicitantes aún.</td></tr>}
-              </tbody>
-            </table>
+          <div className="acct-list">
+            {pagShel.pageItems.map(s => (
+              <div className="acct-row" key={s.id}>
+                <div className="acct-main">
+                  <div className="acct-name">{s.name} <span className="acct-tag">{shelterTypeLabel(s.shelter_type)}</span></div>
+                  <div className="acct-meta">
+                    <span>📍 {s.estado || '—'}{s.location ? ` · ${s.location}` : ''}</span>
+                    {s.contact && <span>👤 {s.contact}</span>}
+                    {s.phone && <span>📞 {s.phone}</span>}
+                    {s.email && <span>✉️ {s.email}</span>}
+                    <span className="muted">{fmtDate(s.created_at)}</span>
+                  </div>
+                </div>
+                {s.owner_id && <button className="btn xs acct-view" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(s.owner_id); navigate('/') }}>👁️ Ver como</button>}
+              </div>
+            ))}
+            {shelters.length === 0 && <div className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin solicitantes aún.</div>}
           </div>
           <Pagination page={pagShel.page} totalPages={pagShel.totalPages} setPage={pagShel.setPage} total={pagShel.total} />
         </>
