@@ -655,7 +655,13 @@ table.data tr:last-child td { border-bottom: none; }
 .contrib-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-secondary); }
 .contrib-undo { background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0; }
 .contrib-form { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
-.contrib-form input { flex: 1; max-width: 220px; }
+.contrib-form input {
+  flex: 1; max-width: 220px;
+  padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit;
+  box-sizing: border-box; transition: border 0.15s, box-shadow 0.15s;
+}
+.contrib-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 .contrib-complete { margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--accent); }
 
 /* --- ShelterGroup: info compartida + líneas de item --- */

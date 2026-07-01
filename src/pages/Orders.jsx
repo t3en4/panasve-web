@@ -232,6 +232,11 @@ export default function Orders() {
       if (filter === 'cancelled') return false  // no se listan refugios por cancelados aquí
       return Number(r.total_count) > 0          // 'all' = activos
     })
+    // Filtrar por tipo de pedido (comida / insumos / voluntarios) antes de paginar,
+    // para que la paginación no incluya solicitantes sin pedidos de ese tipo.
+    if (tipoFilter === 'comida') resumenList = resumenList.filter(r => Number(r.comida_count) > 0)
+    else if (tipoFilter === 'insumos') resumenList = resumenList.filter(r => Number(r.insumos_count) > 0)
+    else if (tipoFilter === 'voluntarios') resumenList = resumenList.filter(r => Number(r.voluntarios_count) > 0)
   }
 
   if (isProvider && profile?.lat != null) {
