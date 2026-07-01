@@ -8,6 +8,7 @@ import OrderCard from '../components/OrderCard'
 import OrdersMap from '../components/OrdersMap'
 import ShelterGroup from '../components/ShelterGroup'
 import Pagination, { usePaged } from '../components/Pagination'
+import CountUp from '../components/CountUp'
 
 export default function Orders() {
   const { profile, shelter: myShelter, isShelter, isProvider, isAdmin } = useAuth()
@@ -177,6 +178,10 @@ export default function Orders() {
     total: orders.filter(o => o.status !== 'cancelled').length,
     done: orders.filter(o => o.status === 'done').length,
     active: orders.filter(o => o.status === 'pending' || o.status === 'progress').length,
+    // Refugios distintos con al menos un pedido activo
+    refugiosActivos: new Set(
+      orders.filter(o => o.status === 'pending' || o.status === 'progress').map(o => o.shelter_id)
+    ).size,
     meals: orders
       .filter(o => o.status === 'done' && o.order_type === 'comida')
       .reduce((sum, o) => sum + (o.people || 0), 0),
@@ -270,16 +275,28 @@ export default function Orders() {
       {/* Hero solo para visitantes no autenticados — mapa protagonista */}
       {!profile && (
       <div className="hero">
-        <img src="/logo.png" alt="PanasVE" className="hero-logo" />
-        <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
-        <p className="hero-text">
-          PanasVE conecta a refugios y familias afectadas por los terremotos con
-          restaurantes, chefs y proveedores dispuestos a ayudar.
-        </p>
+        <div className="hero-head fade-in-up">
+          <img src="/logo.png" alt="PanasVE" className="hero-logo" />
+          <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
+          <p className="hero-text">
+            PanasVE conecta a refugios y familias afectadas por los terremotos con
+            restaurantes, chefs y proveedores dispuestos a ayudar.
+          </p>
+        </div>
+
+        {global.active > 0 && (
+          <button className="hero-alert hero-alert-link fade-in-up delay-1" onClick={() => navigate('/login')}>
+            <span className="hero-alert-pulse" aria-hidden="true" />
+            <span>
+              Hay <strong>{global.refugiosActivos}</strong> {global.refugiosActivos === 1 ? 'refugio esperando' : 'refugios esperando'} ayuda ahora mismo.
+              <span className="hero-alert-cta">Inicia sesión o regístrate para ayudar →</span>
+            </span>
+          </button>
+        )}
 
         {/* Mapa de pedidos — protagonista */}
         {homeMarkers.length > 0 && (
-          <div className="hero-map">
+          <div className="hero-map fade-in-up delay-2">
             <div className="hero-map-legend">
               <span><i style={{ background: '#c2703d' }} /> Pendiente</span>
               <span><i style={{ background: '#d9a213' }} /> En progreso</span>
@@ -289,34 +306,25 @@ export default function Orders() {
           </div>
         )}
 
-        <div className="hero-stats">
+        <div className="hero-stats fade-in-up delay-3">
           {[
+            { v: global.refugiosActivos, label: global.refugiosActivos === 1 ? 'refugio necesita ayuda' : 'refugios necesitan ayuda', highlight: true },
             { v: counts.shelters, label: counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados' },
             { v: counts.providers, label: counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados' },
             { v: global.meals, label: 'comidas servidas' },
             { v: global.done, label: 'pedidos completados' },
-            { v: global.active, label: 'pedidos activos' },
-            { v: global.total, label: 'pedidos en total' },
           ].filter(s => s.v > 0).map((s, i) => (
-            <div className="hero-stat" key={i}>
-              <div className="hero-num">{s.v.toLocaleString('es-VE')}</div>
+            <div className={`hero-stat ${s.highlight ? 'highlight' : ''}`} key={i}>
+              <div className="hero-num"><CountUp value={s.v} /></div>
               <div className="hero-label">{s.label}</div>
             </div>
           ))}
         </div>
-        {global.active > 0 && (
-          <button className="hero-alert hero-alert-link" onClick={() => navigate('/login')}>
-            <span className="hero-alert-pulse" aria-hidden="true" />
-            <span>
-              Hay <strong>{global.active}</strong> {global.active === 1 ? 'pedido esperando' : 'pedidos esperando'} ayuda ahora mismo.
-              <span className="hero-alert-cta">Inicia sesión o regístrate para ayudar →</span>
-            </span>
-          </button>
-        )}
-        <div className="hero-cta">
+
+        <div className="hero-cta fade-in-up delay-4">
           <button className="btn primary" onClick={() => navigate('/login')}>Quiero ayudar / Necesito ayuda</button>
         </div>
-        <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="hero-ig">Síguenos en Instagram · @panasve</a>
+        <a href="https://instagram.com/panasve" target="_blank" rel="noreferrer" className="hero-ig fade-in-up delay-4">Síguenos en Instagram · @panasve</a>
       </div>
       )}
 
