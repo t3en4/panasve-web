@@ -13,27 +13,55 @@ export default function Admin() {
   const [rows, setRows] = useState([])
   const [providers, setProviders] = useState([])
   const [shelters, setShelters] = useState([])
+  const [contribs, setContribs] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
   const [statusFilter, setStatusFilter] = useState('todos')   // todos | pending | progress | done | cancelled
+  const [soloConPedidos, setSoloConPedidos] = useState(false)   // filtro en Proveedores
 
   const load = useCallback(async () => {
-    const [{ data: o }, { data: p }, { data: s }] = await Promise.all([
+    const [{ data: o }, { data: p }, { data: s }, { data: c }] = await Promise.all([
       supabase.from('orders_full').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').eq('role', 'provider').order('created_at', { ascending: false }),
       supabase.from('shelters').select('*').order('created_at', { ascending: false }),
+      supabase.from('order_contributions').select('order_id, provider_id, delivered_at'),
     ])
     setRows(o || [])
     setProviders(p || [])
     setShelters(s || [])
+    setContribs(c || [])
     setLoading(false)
   }, [])
 
   useEffect(() => { load() }, [load])
 
+  // Conteo de pedidos por proveedor y estado.
+  // Considera: insumos tomados (claimed_by) + comida/voluntarios aportados (order_contributions).
+  const ordersById = {}
+  for (const o of rows) ordersById[o.id] = o
+  const provStats = {}   // providerId -> { pending, progress, done, total, byOrder:Set }
+  const ensure = (id) => (provStats[id] ||= { pending: 0, progress: 0, done: 0, total: 0, _seen: new Set() })
+  const addOrder = (provId, order) => {
+    if (!provId || !order) return
+    const st = ensure(provId)
+    if (st._seen.has(order.id)) return
+    st._seen.add(order.id)
+    if (order.status === 'pending') st.pending++
+    else if (order.status === 'progress') st.progress++
+    else if (order.status === 'done') st.done++
+    if (['pending', 'progress', 'done'].includes(order.status)) st.total++
+  }
+  for (const o of rows) if (o.claimed_by) addOrder(o.claimed_by, o)
+  for (const c of contribs) addOrder(c.provider_id, ordersById[c.order_id])
+
+  // Lista de proveedores según el filtro
+  const provList = soloConPedidos
+    ? providers.filter(p => (provStats[p.id]?.total || 0) > 0)
+    : providers
+
   // Paginación de tablas (10 por página)
-  const pagProv = usePaged(providers, 10, 'prov')
+  const pagProv = usePaged(provList, 10, `prov-${soloConPedidos}`)
   const pagShel = usePaged(shelters, 10, 'shel')
 
   if (!isAdmin) return <div className="content"><div className="empty-state">Acceso solo para administradores.</div></div>
@@ -183,8 +211,14 @@ export default function Admin() {
         </>
       ) : tab === 'providers' ? (
         <>
+          <div className="filter-row" style={{ marginBottom: 14 }}>
+            <button className={`btn sm ${!soloConPedidos ? 'accent' : ''}`} onClick={() => setSoloConPedidos(false)}>Todos ({providers.length})</button>
+            <button className={`btn sm ${soloConPedidos ? 'accent' : ''}`} onClick={() => setSoloConPedidos(true)}>Con pedidos asignados ({providers.filter(p => (provStats[p.id]?.total || 0) > 0).length})</button>
+          </div>
           <div className="acct-list">
-            {pagProv.pageItems.map(p => (
+            {pagProv.pageItems.map(p => {
+              const st = provStats[p.id]
+              return (
               <div className="acct-row" key={p.id}>
                 <div className="acct-main">
                   <div className="acct-name">{p.name} <span className="acct-tag">{providerTypeLabel(p.provider_type)}</span></div>
@@ -195,11 +229,19 @@ export default function Admin() {
                     {p.instagram && <span>📷 {p.instagram}</span>}
                     <span className="muted">{fmtDate(p.created_at)}</span>
                   </div>
+                  {st && st.total > 0 && (
+                    <div className="acct-pills">
+                      {st.pending > 0 && <span className="acct-pill pending"><i className="status-dot pending" />{st.pending} pendiente{st.pending === 1 ? '' : 's'}</span>}
+                      {st.progress > 0 && <span className="acct-pill progress"><i className="status-dot progress" />{st.progress} en progreso</span>}
+                      {st.done > 0 && <span className="acct-pill done"><i className="status-dot done" />{st.done} entregado{st.done === 1 ? '' : 's'}</span>}
+                    </div>
+                  )}
                 </div>
                 <button className="btn xs acct-view" title="Ver la app como esta cuenta" onClick={() => { setPreviewUser(p.id); navigate('/') }}>👁️ Ver como</button>
               </div>
-            ))}
-            {providers.length === 0 && <div className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin proveedores aún.</div>}
+              )
+            })}
+            {provList.length === 0 && <div className="muted" style={{ textAlign: 'center', padding: 30 }}>{soloConPedidos ? 'Ningún proveedor con pedidos asignados.' : 'Sin proveedores aún.'}</div>}
           </div>
           <Pagination page={pagProv.page} totalPages={pagProv.totalPages} setPage={pagProv.setPage} total={pagProv.total} />
         </>

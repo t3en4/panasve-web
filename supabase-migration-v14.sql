@@ -7,8 +7,8 @@
 -- Corre en Supabase > SQL Editor > Run.
 -- ============================================================
 
--- 1) Nuevo valor en el enum de tipo de pedido
-alter type order_type add value if not exists 'voluntarios';
+-- 1) Nuevo valor en el enum de tipo de pedido (el enum se llama order_kind)
+alter type order_kind add value if not exists 'voluntarios';
 
 -- 2) Columna de propósito (para qué se necesitan)
 alter table public.orders add column if not exists purpose text;
