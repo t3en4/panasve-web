@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from './ThemeToggle'
 
 export default function Nav() {
   const { profile, isAdmin, isShelter, signOut } = useAuth()
@@ -42,6 +43,7 @@ export default function Nav() {
         </div>
 
         <div className="nav-right">
+          <ThemeToggle />
           {profile ? (
             <>
               <div className="profile-badge">

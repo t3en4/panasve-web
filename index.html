@@ -27,6 +27,15 @@
     <title>PanasVE — Solidaridad por Venezuela</title>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('panasve-theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
