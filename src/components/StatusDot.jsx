@@ -2,7 +2,10 @@
 const LABELS = { pending: 'Pendiente', progress: 'En progreso', done: 'Entregado', cancelled: 'Cancelado' }
 
 export function StatusDot({ status }) {
-  return <span className={`status-dot ${status}`} title={LABELS[status] || ''} aria-label={LABELS[status] || ''} />
+  const label = LABELS[status] || ''
+  return (
+    <span className={`status-dot ${status}`} data-label={label} title={label} aria-label={label} role="img" />
+  )
 }
 
 export function StatusLegend({ compact }) {

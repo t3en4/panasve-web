@@ -335,9 +335,9 @@ table.data tr:last-child td { border-bottom: none; }
 .hero-flag { font-size: 38px; line-height: 1; margin-bottom: 12px; }
 .hero-title { font-family: var(--font-display); font-size: 40px; font-weight: 600; color: var(--text); margin-bottom: 14px; letter-spacing: -0.02em; line-height: 1.08; }
 .hero-text { font-size: 15.5px; color: var(--text-secondary); max-width: 540px; margin: 0 auto 24px; line-height: 1.7; }
-.hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; max-width: 620px; margin: 24px auto 0; }
-@media (max-width: 600px) { .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; } .hero-title { font-size: 28px; } }
-.hero-stat { background: var(--surface); border-radius: var(--radius-sm); padding: 18px 12px; border: 1px solid var(--border); transition: transform 0.18s, border-color 0.18s; }
+.hero-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 520px; margin: 24px auto 0; }
+@media (max-width: 600px) { .hero-title { font-size: 28px; } }
+.hero-stat { flex: 0 1 152px; background: var(--surface); border-radius: var(--radius-sm); padding: 18px 12px; border: 1px solid var(--border); transition: transform 0.18s, border-color 0.18s; }
 .hero-stat:hover { transform: translateY(-2px); border-color: var(--border-strong); }
 .hero-stat.highlight { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .hero-stat.highlight .hero-num { color: var(--accent); }
@@ -706,11 +706,24 @@ table.data tr:last-child td { border-bottom: none; }
 }
 
 /* Punto de estado (reemplaza los pills en las líneas de item) */
-.status-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.status-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex-shrink: 0; position: relative; }
 .status-dot.pending { background: var(--terracota); }
 .status-dot.progress { background: var(--gold); }
 .status-dot.done { background: var(--success); }
 .status-dot.cancelled { background: var(--text-muted); }
+
+/* Tooltip al pasar el cursor sobre el dot */
+.status-dot[data-label]::after {
+  content: attr(data-label);
+  position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%) translateY(4px);
+  background: var(--nav-bg); color: var(--nav-text); font-size: 11.5px; font-weight: 500;
+  padding: 4px 9px; border-radius: 7px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s, transform 0.15s; z-index: 40;
+  box-shadow: var(--shadow);
+}
+.status-dot[data-label]:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* los dots de la leyenda no muestran tooltip (ya tienen texto) */
+.status-legend .status-dot::after { display: none; }
 
 /* Leyenda de estados */
 .status-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
