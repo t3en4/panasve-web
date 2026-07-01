@@ -15,6 +15,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [login, setLogin] = useState({ email: '', password: '' })
+  const [showPass, setShowPass] = useState(false)
   const [reg, setReg] = useState({
     name: '', email: '', password: '', phone: '', contact: '', instagram: '',
     address: '', coords: '', location: '', contact_recv: '', estado: '', provider_type: 'restaurante', shelter_type: 'refugio',
@@ -112,8 +113,14 @@ export default function Login() {
             </div>
             <div className="field" style={{ marginBottom: 18 }}>
               <label>Contraseña</label>
-              <input type="password" value={login.password} onChange={e => setLogin({ ...login, password: e.target.value })}
-                placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && doLogin()} />
+              <div className="pass-wrap">
+                <input type={showPass ? 'text' : 'password'} value={login.password} onChange={e => setLogin({ ...login, password: e.target.value })}
+                  placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && doLogin()} />
+                <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)}
+                  aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} title={showPass ? 'Ocultar' : 'Mostrar'}>
+                  {showPass ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
             <button className="btn primary" style={{ width: '100%' }} onClick={doLogin} disabled={busy}>
               {busy ? 'Entrando…' : 'Iniciar sesión'}
@@ -192,7 +199,8 @@ export default function Login() {
               <div className="field"><label>Email <span className="req">*</span></label>
                 <input type="email" value={reg.email} onChange={e => setR('email', e.target.value)} placeholder="tu@email.com" /></div>
               <div className="field"><label>Contraseña <span className="req">*</span></label>
-                <input type="password" value={reg.password} onChange={e => setR('password', e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
+                <div className="pass-wrap"><input type={showPass ? 'text' : 'password'} value={reg.password} onChange={e => setR('password', e.target.value)} placeholder="Mínimo 6 caracteres" />
+                <button type="button" className="pass-toggle" onClick={() => setShowPass(s => !s)} aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}>{showPass ? '🙈' : '👁️'}</button></div></div>
 
               {regRole === 'shelter' ? (
                 <>

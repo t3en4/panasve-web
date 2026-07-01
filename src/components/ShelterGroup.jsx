@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase, distanceKm, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import FoodContributions from './FoodContributions'
+import { StatusDot, StatusLegend } from './StatusDot'
 
 // Tarjeta colapsable de un refugio. Al expandir muestra la info compartida
 // una sola vez (ubicación, contacto, notas, mapa) y luego una línea por item.
@@ -112,6 +113,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
                   )}
                 </div>
                 {mapsUrl && <a className="sg-shared-map" href={mapsUrl} target="_blank" rel="noreferrer">📍 Ver en mapa</a>}
+                <StatusLegend />
               </div>
 
               {/* Lista de items: una línea por pedido */}
@@ -146,8 +148,6 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy,
     ? (order.items?.[0]?.name || '1 insumo')
     : `Comida · ${order.people} personas`
 
-  const statusMap = { pending: 'Pendiente', progress: 'En progreso', done: 'Entregado', cancelled: 'Cancelado' }
-
   // Progreso de comida (inline)
   const meta = order.people || 0
   const cubierto = order.contributed || 0
@@ -164,7 +164,7 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy,
   return (
     <div className="sg-item">
       <div className="sg-item-main">
-        <span className={`badge ${order.status}`}>{statusMap[order.status]}</span>
+        <StatusDot status={order.status} />
         <span className="sg-item-name">
           {label}
           {!isInsumos && (

@@ -3,6 +3,7 @@ import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import Pagination, { usePaged } from '../components/Pagination'
+import { StatusDot, StatusLegend } from '../components/StatusDot'
 import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
@@ -306,6 +307,7 @@ function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange }
               {shelterObj?.instagram && <div><span className="label">Instagram:</span> {shelterObj.instagram}</div>}
             </div>
             {mapsUrl && <a className="sg-shared-map" href={mapsUrl} target="_blank" rel="noreferrer">📍 Ver en mapa</a>}
+            <StatusLegend />
           </div>
 
           {/* Una línea por item */}
@@ -359,7 +361,7 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
   return (
     <div className="sg-item">
       <div className="sg-item-main">
-        <span className={`badge ${r.status}`}>{statusLabel[r.status]}</span>
+        <StatusDot status={r.status} />
         <span className="sg-item-name">
           {label}
           {qty ? <span className="muted" style={{ marginLeft: 6 }}>· {qty}</span> : null}

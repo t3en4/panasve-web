@@ -4,6 +4,7 @@ import { supabase, fmtDate, distanceKm } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './Toast'
 import FoodContributions from './FoodContributions'
+import { StatusDot } from './StatusDot'
 
 const STATUS = {
   pending: { label: 'Pendiente', cls: 'pending' },
@@ -77,7 +78,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
       {/* Cabecera siempre visible (clic para expandir) */}
       <button className="order-head" onClick={toggle} aria-expanded={expanded}>
         <span className="order-chevron">{expanded ? '▾' : '▸'}</span>
-        <span className={`badge ${st.cls}`}>{st.label}</span>
+        <StatusDot status={order.status} />
         <span className="order-head-name">{shelter?.name || 'Refugio'}</span>
         <span className={`type-pill ${isInsumos ? 'insumos' : 'comida'}`}>{isInsumos ? '📦' : '🍽️'}</span>
         <span className="order-head-summary">{resumen}</span>

@@ -9,6 +9,7 @@ import OrdersMap from '../components/OrdersMap'
 import ShelterGroup from '../components/ShelterGroup'
 import Pagination, { usePaged } from '../components/Pagination'
 import CountUp from '../components/CountUp'
+import { StatusLegend } from '../components/StatusDot'
 
 export default function Orders() {
   const { profile, shelter: myShelter, isShelter, isProvider, isAdmin } = useAuth()
@@ -373,6 +374,7 @@ export default function Orders() {
                 </div>
               ) : (
                 <>
+                  <StatusLegend compact />
                   {pagMios.pageItems.map(o => (
                     <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
                       onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
@@ -447,6 +449,7 @@ export default function Orders() {
             </div>
           ) : (
             <>
+              <StatusLegend compact />
               {pagShelter.pageItems.map(o => (
                 <OrderCard key={o.id} order={o} shelter={shelters[o.shelter_id]}
                   onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
