@@ -26,6 +26,7 @@ export default function Orders() {
   const [resumenRefugios, setResumenRefugios] = useState([])
   const [misPedidos, setMisPedidos] = useState(null)   // null = no cargado aún
   const autoTabRef = useRef(false)   // para fijar la pestaña inicial solo una vez
+  const [flashMis, setFlashMis] = useState(false)   // destello temporal en "Mis pedidos"
   const [misStatus, setMisStatus] = useState('all')     // all | progress | done
   const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
@@ -66,15 +67,22 @@ export default function Orders() {
   }, [profile?.id])
 
   // Al entrar como proveedor: cargar sus pedidos y, si tiene asignados,
-  // mostrar "Mis pedidos" por defecto (solo la primera vez).
+  // mostrar "Mis pedidos" por defecto y destellarla brevemente (solo la primera vez).
   useEffect(() => {
     if (!isProvider) return
     if (misPedidos === null) { cargarMisPedidos(); return }
     if (!autoTabRef.current) {
       autoTabRef.current = true
-      if (misPedidos.length > 0) setView('mios')
+      if (misPedidos.length > 0) { setView('mios'); setFlashMis(true) }
     }
   }, [isProvider, misPedidos, cargarMisPedidos])
+
+  // Apagar el destello a los 5 segundos
+  useEffect(() => {
+    if (!flashMis) return
+    const t = setTimeout(() => setFlashMis(false), 5000)
+    return () => clearTimeout(t)
+  }, [flashMis])
 
   // Resumen de refugios con pedidos activos (vista agrupada: solo proveedor)
   useEffect(() => {
@@ -366,19 +374,19 @@ export default function Orders() {
           <div className="view-tabs">
             {isProvider ? (() => {
               const tieneMios = (misPedidos?.length || 0) > 0
-              const destacar = tieneMios && view !== 'mios'   // destello hasta que la abran
+              const destacar = tieneMios && (flashMis || view !== 'mios')   // destella al entrar y hasta que la abran
               const misBtn = (
                 <button key="mios" className={`view-tab ${view === 'mios' ? 'active' : ''} ${destacar ? 'flash' : ''}`}
-                  onClick={() => { setView('mios'); if (misPedidos === null) cargarMisPedidos() }}>
+                  onClick={() => { setFlashMis(false); setView('mios'); if (misPedidos === null) cargarMisPedidos() }}>
                   {destacar && <span className="tab-dot" aria-hidden="true" />}✓ Mis pedidos
                   {tieneMios && <span className="tab-count">{misPedidos.length}</span>}
                 </button>
               )
               const dispBtn = (
-                <button key="disp" className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => setView('lista')}>☰ Disponibles</button>
+                <button key="disp" className={`view-tab ${view === 'lista' ? 'active' : ''}`} onClick={() => { setFlashMis(false); setView('lista') }}>☰ Disponibles</button>
               )
               const mapaBtn = (
-                <button key="mapa" className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => setView('mapa')}>📍 Mapa</button>
+                <button key="mapa" className={`view-tab ${view === 'mapa' ? 'active' : ''}`} onClick={() => { setFlashMis(false); setView('mapa') }}>📍 Mapa</button>
               )
               // Si tiene pedidos asignados, "Mis pedidos" va primero
               return tieneMios ? <>{misBtn}{dispBtn}{mapaBtn}</> : <>{dispBtn}{misBtn}{mapaBtn}</>
