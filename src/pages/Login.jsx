@@ -105,7 +105,7 @@ export default function Login() {
           <div className="card">
             <div style={{ marginBottom: 16 }}>
               <div className="card-title">Iniciar sesión</div>
-              <div className="card-sub">Para refugios y proveedores.</div>
+              <div className="card-sub">Para solicitantes y proveedores.</div>
             </div>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Email</label>
@@ -162,7 +162,7 @@ export default function Login() {
               <span className="role-emoji">🙏</span>
               <span>
                 <strong>Necesito ayuda</strong>
-                <span className="role-desc">Publica pedidos de comida o insumos para tu organización, refugio o familia.</span>
+                <span className="role-desc">Publica pedidos de comida o insumos para ti, tu familia u organización.</span>
               </span>
             </button>
             <button className="role-option" onClick={() => { setRegRole('provider'); setMode('register') }}>
@@ -182,8 +182,8 @@ export default function Login() {
               {regRole === 'shelter' ? 'Necesito ayuda' : 'Quiero ayudar'}
             </div>
             <div className="form-grid">
-              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre (organización, refugio o tuyo)' : 'Nombre / Negocio'} <span className="req">*</span></label>
-                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José' : 'Ej: Mi Restaurante'} /></div>
+              <div className="field full"><label>{regRole === 'shelter' ? 'Nombre (tú, tu familia u organización)' : 'Nombre / Negocio'} <span className="req">*</span></label>
+                <input value={reg.name} onChange={e => setR('name', e.target.value)} placeholder={regRole === 'shelter' ? 'Ej: Refugio San José o Familia Pérez' : 'Ej: Mi Restaurante'} /></div>
               {regRole === 'shelter' && (
                 <div className="field"><label>Tipo <span className="req">*</span></label>
                   <select value={reg.shelter_type} onChange={e => setR('shelter_type', e.target.value)}>

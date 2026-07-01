@@ -79,7 +79,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
       <button className="order-head" onClick={toggle} aria-expanded={expanded}>
         <span className="order-chevron">{expanded ? '▾' : '▸'}</span>
         <StatusDot status={order.status} />
-        <span className="order-head-name">{shelter?.name || 'Refugio'}</span>
+        <span className="order-head-name">{shelter?.name || 'Solicitante'}</span>
         <span className={`type-pill ${isInsumos ? 'insumos' : 'comida'}`}>{isInsumos ? '📦' : '🍽️'}</span>
         <span className="order-head-summary">{resumen}</span>
         {dist && <span className="dist-pill">{dist} km</span>}

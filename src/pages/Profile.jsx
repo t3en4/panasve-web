@@ -61,7 +61,7 @@ export default function Profile() {
         const resumen = o.order_type === 'insumos'
           ? `${(o.items || []).length} insumos`
           : `${o.people} personas`
-        return { lat, lng, title: s?.name || 'Refugio', subtitle: resumen }
+        return { lat, lng, title: s?.name || 'Solicitante', subtitle: resumen }
       }).filter(Boolean)
       setMapMarkers(marks)
     }
@@ -72,7 +72,7 @@ export default function Profile() {
     // Campos obligatorios para refugios
     if (isShelter) {
       if (!shelter?.id) {
-        toast('Tu cuenta de refugio no está completa. Cierra sesión y vuelve a entrar; si persiste, contacta al admin.', 'error')
+        toast('Tu cuenta de solicitante no está completa. Cierra sesión y vuelve a entrar; si persiste, contacta al admin.', 'error')
         return
       }
       if (!form.location?.trim() || !form.phone?.trim() || !form.contact?.trim() || !form.contact_recv?.trim()) {
@@ -138,7 +138,7 @@ export default function Profile() {
       <div className="section-header"><div className="section-title">Mi perfil</div></div>
       <div className="card" style={{ maxWidth: 620 }}>
         <div className="form-grid">
-          <div className="field"><label>{isShelter ? 'Nombre (organización, refugio o tuyo)' : 'Nombre / Negocio'}</label>
+          <div className="field"><label>{isShelter ? 'Nombre (tú, tu familia u organización)' : 'Nombre / Negocio'}</label>
             <input value={form.name} onChange={e => set('name', e.target.value)} /></div>
           <div className="field"><label>Email</label><input value={profile.email} disabled /></div>
           {isShelter && (

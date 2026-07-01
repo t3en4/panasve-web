@@ -28,7 +28,7 @@ export const SHELTER_TYPES = [
 ]
 
 export const shelterTypeLabel = (v) =>
-  SHELTER_TYPES.find(t => t.value === v)?.label || 'Refugio'
+  SHELTER_TYPES.find(t => t.value === v)?.label || 'Solicitante'
 
 // Reglas de oro para manejo seguro de alimentos
 export const REGLAS_ORO = [

@@ -55,7 +55,7 @@ export default function NewOrder() {
   if (!isShelter) {
     return <div className="content"><div className="empty-state">
       <span className="icon">🔒</span>
-      <p>Solo los refugios registrados pueden crear pedidos.</p>
+      <p>Solo los solicitantes registrados pueden crear pedidos.</p>
       <button className="btn primary" style={{ marginTop: 12 }} onClick={() => navigate('/login')}>Iniciar sesión</button>
     </div></div>
   }
@@ -84,7 +84,7 @@ export default function NewOrder() {
   async function submit() {
     // Salvaguarda: si la cuenta es refugio pero no tiene registro asociado
     if (!shelter?.id) {
-      toast('Tu cuenta de refugio no está completa. Ve a Mi perfil o contacta al admin.', 'error')
+      toast('Tu cuenta de solicitante no está completa. Ve a Mi perfil o contacta al admin.', 'error')
       return
     }
     // Validación según tipo

@@ -242,7 +242,7 @@ export default function Orders() {
       if (lat == null) return null
       const resumen = o.order_type === 'insumos'
         ? `${(o.items || []).length} insumos` : `${o.people} personas · ${(o.meals || []).join(', ')}`
-      return { lat, lng, title: s?.name || 'Refugio', subtitle: resumen }
+      return { lat, lng, title: s?.name || 'Solicitante', subtitle: resumen }
     }).filter(Boolean)
   } else if (isShelter) {
     mapMarkers = providers.filter(p => p.lat != null).map(p => ({
@@ -280,7 +280,7 @@ export default function Orders() {
           <img src="/logo.png" alt="PanasVE" className="hero-logo" />
           <h1 className="hero-title">Conectamos ayuda con quien la necesita</h1>
           <p className="hero-text">
-            PanasVE conecta a refugios y familias afectadas por los terremotos con
+            PanasVE conecta a quienes fueron afectados por los terremotos con
             restaurantes, chefs y proveedores dispuestos a ayudar.
           </p>
         </div>
@@ -289,7 +289,7 @@ export default function Orders() {
           <button className="hero-alert hero-alert-link fade-in-up delay-1" onClick={() => navigate('/login')}>
             <span className="hero-alert-pulse" aria-hidden="true" />
             <span>
-              Hay <strong>{global.refugiosActivos}</strong> {global.refugiosActivos === 1 ? 'refugio esperando' : 'refugios esperando'} ayuda ahora mismo.
+              Hay <strong>{global.refugiosActivos}</strong> {global.refugiosActivos === 1 ? 'solicitante esperando' : 'solicitantes esperando'} ayuda ahora mismo.
               <span className="hero-alert-cta">Inicia sesión o regístrate para ayudar →</span>
             </span>
           </button>
@@ -309,7 +309,7 @@ export default function Orders() {
 
         <div className="hero-stats fade-in-up delay-3">
           {[
-            { v: global.refugiosActivos, label: global.refugiosActivos === 1 ? 'refugio necesita ayuda' : 'refugios necesitan ayuda', highlight: true },
+            { v: global.refugiosActivos, label: global.refugiosActivos === 1 ? 'solicitante necesita ayuda' : 'solicitantes necesitan ayuda', highlight: true },
             { v: counts.shelters, label: counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados' },
             { v: counts.providers, label: counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados' },
             { v: global.meals, label: 'comidas servidas' },

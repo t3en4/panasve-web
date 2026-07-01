@@ -95,7 +95,7 @@ export default function Admin() {
         <button className={`btn sm ${tab === 'dashboard' ? 'accent' : ''}`} onClick={() => setTab('dashboard')}>Dashboard</button>
         <button className={`btn sm ${tab === 'orders' ? 'accent' : ''}`} onClick={() => setTab('orders')}>Pedidos ({rows.length})</button>
         <button className={`btn sm ${tab === 'providers' ? 'accent' : ''}`} onClick={() => setTab('providers')}>Proveedores ({providers.length})</button>
-        <button className={`btn sm ${tab === 'shelters' ? 'accent' : ''}`} onClick={() => setTab('shelters')}>Refugios ({shelters.length})</button>
+        <button className={`btn sm ${tab === 'shelters' ? 'accent' : ''}`} onClick={() => setTab('shelters')}>Solicitantes ({shelters.length})</button>
         <button className={`btn sm ${tab === 'mensajes' ? 'accent' : ''}`} onClick={() => setTab('mensajes')}>Mensajes</button>
       </div>
 
@@ -104,7 +104,7 @@ export default function Admin() {
           {/* Resumen general */}
           <h3 className="dash-h">Resumen general</h3>
           <div className="dash-grid">
-            <Stat num={shelters.length} label="Refugios" color="var(--success)" />
+            <Stat num={shelters.length} label="Solicitantes" color="var(--success)" />
             <Stat num={providers.length} label="Proveedores" color="var(--accent)" />
             <Stat num={rows.length} label="Pedidos totales" />
             <Stat num={comidasServidas} label="Comidas servidas" color="var(--accent)" />
@@ -155,7 +155,7 @@ export default function Admin() {
           <h3 className="dash-h">Cuentas por estado</h3>
           <div className="table-wrap">
             <table className="data">
-              <thead><tr><th>Estado</th><th>Refugios</th><th>Proveedores</th><th>Total</th></tr></thead>
+              <thead><tr><th>Estado</th><th>Solicitantes</th><th>Proveedores</th><th>Total</th></tr></thead>
               <tbody>
                 {estadosOrdenados.map(([est, v]) => (
                   <tr key={est}><td>{est}</td><td>{v.ref}</td><td>{v.prov}</td><td><b>{v.ref + v.prov}</b></td></tr>
@@ -205,7 +205,7 @@ export default function Admin() {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Refugio</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
+                <tr><th>Solicitante</th><th>Tipo</th><th>Estado</th><th>Ubicación</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th>Registrado</th></tr>
               </thead>
               <tbody>
                 {pagShel.pageItems.map(s => (
@@ -215,7 +215,7 @@ export default function Admin() {
                     <td className="muted">{fmtDate(s.created_at)}</td>
                   </tr>
                 ))}
-                {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin refugios aún.</td></tr>}
+                {shelters.length === 0 && <tr><td colSpan="8" className="muted" style={{ textAlign: 'center', padding: 30 }}>Sin solicitantes aún.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -242,7 +242,7 @@ function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilte
   for (const r of filtradas) {
     const key = r.shelter_id || r.shelter_name || 'sin-refugio'
     if (!grupos[key]) {
-      grupos[key] = { shelter_id: r.shelter_id, name: r.shelter_name || 'Sin refugio', estado: r.shelter_estado || r.shelter_location, orders: [] }
+      grupos[key] = { shelter_id: r.shelter_id, name: r.shelter_name || 'Sin solicitante', estado: r.shelter_estado || r.shelter_location, orders: [] }
     }
     grupos[key].orders.push(r)
   }
@@ -538,7 +538,7 @@ function MensajePanel({ shelters, providers }) {
               <div className="field"><label>Tipo de usuario</label>
                 <select value={tipo} onChange={e => cambiarTipo(e.target.value)}>
                   <option value="todos">Todos</option>
-                  <option value="refugios">Refugios</option>
+                  <option value="refugios">Solicitantes</option>
                   <option value="proveedores">Proveedores</option>
                 </select>
               </div>
@@ -555,8 +555,8 @@ function MensajePanel({ shelters, providers }) {
               <div className="field"><label>Enviar a</label>
                 <select value={audience} onChange={e => setAudience(e.target.value)}>
                   <option value="proveedores">Todos los proveedores</option>
-                  <option value="refugios">Todos los refugios</option>
-                  <option value="todos">Todos (refugios + proveedores)</option>
+                  <option value="refugios">Todos los solicitantes</option>
+                  <option value="todos">Todos (solicitantes + proveedores)</option>
                   <option value="proveedor_tipo">Proveedores por tipo…</option>
                 </select>
               </div>
@@ -572,7 +572,7 @@ function MensajePanel({ shelters, providers }) {
           {modo === 'externos' && (
             <div className="field"><label>Correos externos <span className="req">*</span></label>
               <textarea value={extEmails} onChange={e => setExtEmails(e.target.value)} rows={3}
-                placeholder="Pega uno o varios correos, separados por coma, espacio o salto de línea&#10;ej: refugio@ejemplo.com, chef@ejemplo.com" />
+                placeholder="Pega uno o varios correos, separados por coma, espacio o salto de línea&#10;ej: solicitante@ejemplo.com, chef@ejemplo.com" />
               <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                 {extValidos.length > 0 && <span style={{ color: 'var(--success)' }}>{extValidos.length} correo(s) válido(s). </span>}
                 {extInvalidos.length > 0 && <span style={{ color: 'var(--danger)' }}>{extInvalidos.length} con formato inválido (se omiten). </span>}
