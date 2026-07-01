@@ -310,7 +310,7 @@ export default function Orders() {
         <div className="hero-stats fade-in-up delay-3">
           {[
             { v: global.refugiosActivos, label: global.refugiosActivos === 1 ? 'solicitante necesita ayuda' : 'solicitantes necesitan ayuda', highlight: true },
-            { v: counts.shelters, label: counts.shelters === 1 ? 'refugio registrado' : 'refugios registrados' },
+            { v: counts.shelters, label: counts.shelters === 1 ? 'solicitante registrado' : 'solicitantes registrados' },
             { v: counts.providers, label: counts.providers === 1 ? 'proveedor registrado' : 'proveedores registrados' },
             { v: global.meals, label: 'comidas servidas' },
             { v: global.done, label: 'pedidos completados' },
