@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, distanceKm } from '../lib/supabase'
-import { ESTADOS } from '../lib/constants'
+import { ESTADOS, parseSearchTerms, matchesAnyTerm } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import OrderCard from '../components/OrderCard'
@@ -22,6 +22,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
+  const [insumoSearch, setInsumoSearch] = useState('')    // búsqueda de insumos (proveedor)
   const [estadoFilter, setEstadoFilter] = useState('all')
   const [resumenRefugios, setResumenRefugios] = useState([])
   const [misPedidos, setMisPedidos] = useState(null)   // null = no cargado aún
@@ -218,6 +219,32 @@ export default function Orders() {
   const agrupado = isProvider   // vista agrupada por refugio (solo proveedores)
   const title = isShelter ? 'Mis pedidos' : isProvider ? 'Pedidos cercanos a tu ubicación' : 'Pedidos activos'
 
+  // Búsqueda de insumos (solo vista agrupada del proveedor). Al buscar, el
+  // ámbito se fija en "insumos" y se ignora el filtro de tipo.
+  const searchTerms = parseSearchTerms(insumoSearch)
+  const searching = agrupado && searchTerms.length > 0
+  const effTipo = searching ? 'insumos' : tipoFilter
+
+  // Solicitantes que tienen al menos un pedido de insumos (dentro del status
+  // visible) cuyo nombre coincide con la búsqueda. Se calcula desde `orders`,
+  // que ya está completo en memoria (la vista agrupada carga los detalles aparte).
+  let matchShelterIds = null
+  if (searching) {
+    const inScope = (o) => {
+      if (o.order_type !== 'insumos') return false
+      if (filter === 'pending') return o.status === 'pending'
+      if (filter === 'progress') return o.status === 'progress'
+      if (filter === 'done') return o.status === 'done'
+      if (filter === 'cancelled') return false
+      return o.status === 'pending' || o.status === 'progress'   // 'all' = activos
+    }
+    matchShelterIds = new Set()
+    for (const o of orders) {
+      if (!inScope(o)) continue
+      if (matchesAnyTerm(o.items?.[0]?.name || '', searchTerms)) matchShelterIds.add(o.shelter_id)
+    }
+  }
+
   // Resumen de refugios (agrupado): filtrar por estado/status y ordenar por cercanía
   let resumenList = resumenRefugios
   if (estadoFilter !== 'all') resumenList = resumenList.filter(r => r.estado === estadoFilter)
@@ -234,9 +261,12 @@ export default function Orders() {
     })
     // Filtrar por tipo de pedido (comida / insumos / voluntarios) antes de paginar,
     // para que la paginación no incluya solicitantes sin pedidos de ese tipo.
-    if (tipoFilter === 'comida') resumenList = resumenList.filter(r => Number(r.comida_count) > 0)
-    else if (tipoFilter === 'insumos') resumenList = resumenList.filter(r => Number(r.insumos_count) > 0)
-    else if (tipoFilter === 'voluntarios') resumenList = resumenList.filter(r => Number(r.voluntarios_count) > 0)
+    // Al buscar, effTipo = 'insumos'.
+    if (effTipo === 'comida') resumenList = resumenList.filter(r => Number(r.comida_count) > 0)
+    else if (effTipo === 'insumos') resumenList = resumenList.filter(r => Number(r.insumos_count) > 0)
+    else if (effTipo === 'voluntarios') resumenList = resumenList.filter(r => Number(r.voluntarios_count) > 0)
+    // Búsqueda de insumos: solo solicitantes con un insumo coincidente.
+    if (searching) resumenList = resumenList.filter(r => matchShelterIds.has(r.shelter_id))
   }
 
   if (isProvider && profile?.lat != null) {
@@ -253,7 +283,7 @@ export default function Orders() {
 
   // Paginación (10 por página) para cada listado
   const pagShelter = usePaged(list, 10, `${filter}-${estadoFilter}`)
-  const pagGrupos = usePaged(resumenList, 10, `${estadoFilter}-${tipoFilter}`)
+  const pagGrupos = usePaged(resumenList, 10, `${estadoFilter}-${effTipo}-${insumoSearch}`)
   const pagMios = usePaged(misFiltrados, 10, misStatus)
 
   // Marcadores del mapa según rol
@@ -457,13 +487,34 @@ export default function Orders() {
             )}
           </div>
 
-          {/* Filtro comida / insumos (vista agrupada: proveedor o admin) */}
+          {/* Buscador de insumos + filtro comida/insumos/voluntarios (solo proveedor) */}
           {agrupado && (
-            <div className="filter-row">
-              {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
-                <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
-              ))}
-            </div>
+            <>
+              <div className="insumo-search">
+                <span className="insumo-search-icon" aria-hidden="true">🔍</span>
+                <input
+                  type="text"
+                  value={insumoSearch}
+                  onChange={e => setInsumoSearch(e.target.value)}
+                  placeholder="¿Qué insumos puedes suplir? Ej: arroz, pañales, agua…"
+                />
+                {insumoSearch && (
+                  <button className="insumo-search-clear" onClick={() => setInsumoSearch('')} aria-label="Limpiar búsqueda">×</button>
+                )}
+              </div>
+              {searching ? (
+                <div className="insumo-search-note">
+                  Mostrando solicitantes que necesitan <strong>insumos</strong> que coinciden con tu búsqueda ·{' '}
+                  {resumenList.length} {resumenList.length === 1 ? 'resultado' : 'resultados'}
+                </div>
+              ) : (
+                <div className="filter-row">
+                  {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
+                    <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {loading ? (
@@ -472,14 +523,17 @@ export default function Orders() {
             /* Vista agrupada: refugios colapsables, carga diferida */
             resumenList.length === 0 ? (
               <div className="empty-state">
-                <span className="icon">📋</span>
-                <p>No hay pedidos activos en este momento.</p>
+                <span className="icon">{searching ? '🔍' : '📋'}</span>
+                <p>{searching
+                  ? 'Ningún solicitante necesita esos insumos ahora mismo. Prueba con otras palabras.'
+                  : 'No hay pedidos activos en este momento.'}</p>
               </div>
             ) : (
               <>
                 <div className="shelter-groups">
                   {pagGrupos.pageItems.map(r => (
-                    <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={tipoFilter} statusFilter={filter}
+                    <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={effTipo} statusFilter={filter}
+                      searchTerms={searchTerms}
                       myLat={profile?.lat} myLng={profile?.lng}
                       onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
                   ))}

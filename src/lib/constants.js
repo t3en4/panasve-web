@@ -39,6 +39,22 @@ export const ORDER_TYPE_META = {
 export const orderTypeLabel = (v) => ORDER_TYPE_META[v]?.label || 'Pedido'
 export const orderTypeIcon = (v) => ORDER_TYPE_META[v]?.icon || '📋'
 
+// --- Búsqueda de insumos (proveedor) ---
+// Normaliza para comparar: minúsculas + sin acentos.
+export const normalizeText = (s) =>
+  (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+// Divide una búsqueda en términos individuales (por coma o espacio).
+export const parseSearchTerms = (q) =>
+  (q || '').split(/[,\s]+/).map(t => t.trim()).filter(Boolean)
+
+// ¿El texto contiene ALGUNO de los términos? (acento- y mayúscula-insensible)
+export const matchesAnyTerm = (text, terms) => {
+  if (!terms || terms.length === 0) return true
+  const n = normalizeText(text)
+  return terms.some(t => n.includes(normalizeText(t)))
+}
+
 // Reglas de oro para manejo seguro de alimentos
 export const REGLAS_ORO = [
   { titulo: 'Tiempo', texto: 'Máximo 2 horas fuera de frío (1 hora si hace mucho calor, por encima de 32°C).' },

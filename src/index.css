@@ -680,6 +680,39 @@ table.data tr:last-child td { border-bottom: none; }
 .sg-item-detail { padding: 4px 4px 14px 4px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-secondary); }
 .sg-item-detail .label { color: var(--text-muted); margin-right: 4px; }
 
+/* Buscador de insumos (vista del proveedor) */
+.insumo-search { position: relative; margin-bottom: 12px; }
+.insumo-search input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 38px 11px 38px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font-size: 14px;
+}
+.insumo-search input::placeholder { color: var(--text-muted); }
+.insumo-search input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.insumo-search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 15px; opacity: .65; pointer-events: none;
+}
+.insumo-search-clear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; border: none; border-radius: 50%; cursor: pointer;
+  background: var(--border); color: var(--text); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.insumo-search-clear:hover { background: var(--border-strong); }
+.insumo-search-note { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+.insumo-search-note strong { color: var(--accent); }
+
+/* Resaltado de coincidencias de la búsqueda */
+mark.hl {
+  background: var(--gold-bg); color: var(--gold);
+  padding: 0 2px; border-radius: 4px; font-weight: 600;
+}
+
 /* Botón extra pequeño para las líneas de item */
 .btn.xs { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
 .btn.xs.sg-expand { padding: 4px 9px; font-weight: 600; }

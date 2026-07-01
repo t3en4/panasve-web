@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, distanceKm, fmtDate } from '../lib/supabase'
+import { normalizeText, matchesAnyTerm } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import FoodContributions from './FoodContributions'
 import { StatusDot, StatusLegend } from './StatusDot'
@@ -7,7 +8,7 @@ import { StatusDot, StatusLegend } from './StatusDot'
 // Tarjeta colapsable de un refugio. Al expandir muestra la info compartida
 // una sola vez (ubicación, contacto, notas, mapa) y luego una línea por item.
 export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat, myLng,
-  onClaim, onDeliver, onRelease, onCancel, busy }) {
+  searchTerms = [], onClaim, onDeliver, onRelease, onCancel, busy }) {
   const { profile, isProvider, isShelter, shelter: myShelter, isPreview } = useAuth()
   const [open, setOpen] = useState(false)
   const [orders, setOrders] = useState(null)   // null = aún no cargado
@@ -30,6 +31,14 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
     if (open) recargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, tipoFilter])
+
+  // Al buscar insumos, el padre solo renderiza solicitantes con coincidencias:
+  // los expandimos automáticamente para mostrar el resultado de una vez.
+  const searching = searchTerms.length > 0
+  useEffect(() => {
+    if (searching && !open) { setOpen(true); if (orders === null) recargar() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searching])
 
   async function recargar() {
     setLoading(true)
@@ -78,6 +87,12 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
     : resumen.total_count
   if (Number(count) === 0) return null
 
+  // Al buscar, mostramos solo los insumos coincidentes; si no, todos los cargados.
+  const displayOrders = searching
+    ? (orders || []).filter(o => o.order_type === 'insumos' && matchesAnyTerm(o.items?.[0]?.name || '', searchTerms))
+    : (orders || [])
+  const shownCount = searching && orders !== null ? displayOrders.length : Number(count)
+
   const mapsUrl = (resumen.lat != null && resumen.lng != null)
     ? `https://www.google.com/maps/search/?api=1&query=${resumen.lat},${resumen.lng}` : null
 
@@ -92,7 +107,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
             {dist != null && ` · ${dist.toFixed(1)} km`}
           </span>
         </span>
-        <span className="shelter-group-count">{count} {Number(count) === 1 ? 'pedido' : 'pedidos'}</span>
+        <span className="shelter-group-count">{shownCount} {shownCount === 1 ? 'pedido' : 'pedidos'}</span>
       </button>
 
       {open && (
@@ -118,13 +133,14 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
               </div>
 
               {/* Lista de items: una línea por pedido */}
-              {(orders || []).length === 0 ? (
+              {displayOrders.length === 0 ? (
                 <div className="muted" style={{ padding: 12 }}>Sin pedidos.</div>
               ) : (
                 <div className="sg-items">
-                  {orders.map(o => (
+                  {displayOrders.map(o => (
                     <ItemLine key={o.id} order={o} shelterObj={shelterObj || {}} profile={profile}
                       isProvider={isProvider} ownShelter={ownShelter} busy={busy} isPreview={isPreview}
+                      terms={searchTerms}
                       onClaim={onClaim} onDeliver={onDeliver} onRelease={onRelease} onCancel={onCancel}
                       onChanged={recargar} />
                   ))}
@@ -140,7 +156,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
 
 // Una línea por pedido/item. ⊕ expande notas/detalle puntual.
 function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, isPreview,
-  onClaim, onDeliver, onRelease, onCancel, onChanged }) {
+  terms = [], onClaim, onDeliver, onRelease, onCancel, onChanged }) {
   const [showNotes, setShowNotes] = useState(false)
   const isInsumos = order.order_type === 'insumos'
   const esVol = order.order_type === 'voluntarios'
@@ -170,7 +186,7 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, is
       <div className="sg-item-main">
         <StatusDot status={order.status} />
         <span className="sg-item-name">
-          {label}
+          {isInsumos ? <Highlight text={label} terms={terms} /> : label}
           {!isInsumos && (
             <span className="sg-progress">
               <span className="sg-progress-track"><span className={`sg-progress-fill ${cubierto >= meta && meta > 0 ? 'done' : ''}`} style={{ width: `${pct}%` }} /></span>
@@ -213,4 +229,43 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, is
       )}
     </div>
   )
+}
+
+// Resalta las coincidencias de `terms` dentro de `text`.
+// Usa comparación acento-insensible; si la normalización cambia la longitud
+// (caso raro con texto ya descompuesto), cae a comparación por minúsculas
+// para no desalinear los índices.
+function Highlight({ text, terms }) {
+  if (!terms?.length || !text) return <>{text}</>
+  const norm = normalizeText(text)
+  const aligned = norm.length === text.length
+  const hay = aligned ? norm : text.toLowerCase()
+  const needle = (t) => (aligned ? normalizeText(t) : (t || '').toLowerCase())
+
+  const ranges = []
+  for (const t of terms) {
+    const nt = needle(t)
+    if (!nt) continue
+    let i = 0
+    while ((i = hay.indexOf(nt, i)) !== -1) { ranges.push([i, i + nt.length]); i += nt.length }
+  }
+  if (!ranges.length) return <>{text}</>
+
+  ranges.sort((a, b) => a[0] - b[0])
+  const merged = []
+  for (const r of ranges) {
+    const last = merged[merged.length - 1]
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1])
+    else merged.push([...r])
+  }
+
+  const parts = []
+  let pos = 0
+  merged.forEach(([s, e], idx) => {
+    if (s > pos) parts.push(<span key={'t' + idx}>{text.slice(pos, s)}</span>)
+    parts.push(<mark key={'m' + idx} className="hl">{text.slice(s, e)}</mark>)
+    pos = e
+  })
+  if (pos < text.length) parts.push(<span key="tail">{text.slice(pos)}</span>)
+  return <>{parts}</>
 }
