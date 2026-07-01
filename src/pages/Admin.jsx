@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
 import Pagination, { usePaged } from '../components/Pagination'
 import { StatusDot, StatusLegend } from '../components/StatusDot'
-import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
+import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES, parseSearchTerms, matchesAnyTerm } from '../lib/constants'
+import Highlight from '../components/Highlight'
 
 export default function Admin() {
   const { isAdmin, setPreviewUser } = useAuth()
@@ -18,6 +19,7 @@ export default function Admin() {
   const [tab, setTab] = useState('dashboard')
   const [tipoFilter, setTipoFilter] = useState('todos')   // todos | comida | insumos
   const [statusFilter, setStatusFilter] = useState('todos')   // todos | pending | progress | done | cancelled
+  const [insumoSearch, setInsumoSearch] = useState('')        // búsqueda de insumos (pestaña Pedidos)
   const [soloConPedidos, setSoloConPedidos] = useState(false)   // filtro en Proveedores
 
   const load = useCallback(async () => {
@@ -117,6 +119,20 @@ export default function Admin() {
     </div>
   )
 
+  // Búsqueda de insumos (pestaña Pedidos). Fija el ámbito en insumos y cuenta
+  // los solicitantes con al menos un insumo coincidente (dentro del status activo).
+  const searchTerms = parseSearchTerms(insumoSearch)
+  const searching = searchTerms.length > 0
+  const matchCount = searching
+    ? new Set(
+        rows.filter(r =>
+          r.order_type === 'insumos' &&
+          (statusFilter === 'todos' || r.status === statusFilter) &&
+          matchesAnyTerm(r.items?.[0]?.name || '', searchTerms)
+        ).map(r => r.shelter_id || r.shelter_name || 'sin-refugio')
+      ).size
+    : 0
+
   return (
     <div className="content">
       <div className="section-header"><div className="section-title">Panel de administración</div></div>
@@ -197,17 +213,36 @@ export default function Admin() {
         </div>
       ) : tab === 'orders' ? (
         <>
-          <div className="filter-row" style={{ marginBottom: 10 }}>
-            {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
-              <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
-            ))}
+          <div className="insumo-search">
+            <span className="insumo-search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              value={insumoSearch}
+              onChange={e => setInsumoSearch(e.target.value)}
+              placeholder="Buscar insumos… Ej: arroz, pañales, agua"
+            />
+            {insumoSearch && (
+              <button className="insumo-search-clear" onClick={() => setInsumoSearch('')} aria-label="Limpiar búsqueda">×</button>
+            )}
           </div>
+          {searching ? (
+            <div className="insumo-search-note">
+              Mostrando solicitantes con <strong>insumos</strong> que coinciden con tu búsqueda ·{' '}
+              {matchCount} {matchCount === 1 ? 'resultado' : 'resultados'}
+            </div>
+          ) : (
+            <div className="filter-row" style={{ marginBottom: 10 }}>
+              {[['todos', 'Todos'], ['comida', '🍽️ Comida'], ['insumos', '📦 Insumos'], ['voluntarios', '🙋 Voluntarios']].map(([t, label]) => (
+                <button key={t} className={`btn sm ${tipoFilter === t ? 'accent' : ''}`} onClick={() => setTipoFilter(t)}>{label}</button>
+              ))}
+            </div>
+          )}
           <div className="filter-row" style={{ marginBottom: 14 }}>
             {[['todos', 'Todos'], ['pending', 'Pendientes'], ['progress', 'En progreso'], ['done', 'Entregados'], ['cancelled', 'Cancelados']].map(([s, label]) => (
               <button key={s} className={`btn sm ${statusFilter === s ? 'accent' : ''}`} onClick={() => setStatusFilter(s)}>{label}</button>
             ))}
           </div>
-          <AdminOrdersGrouped rows={rows} providers={providers} shelters={shelters} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} onChange={load} />
+          <AdminOrdersGrouped rows={rows} providers={providers} shelters={shelters} tipoFilter={tipoFilter} statusFilter={statusFilter} statusLabel={statusLabel} onChange={load} searchTerms={searchTerms} />
         </>
       ) : tab === 'providers' ? (
         <>
@@ -276,11 +311,14 @@ export default function Admin() {
   )
 }
 
-function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilter, statusLabel, onChange }) {
-  // Filtrar por tipo y status, luego agrupar por refugio
+function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilter, statusLabel, onChange, searchTerms = [] }) {
+  // Al buscar, el ámbito se fija en insumos y se exige coincidencia por nombre.
+  const searching = searchTerms.length > 0
+  const effTipo = searching ? 'insumos' : tipoFilter
   const filtradas = rows.filter(r =>
-    (tipoFilter === 'todos' || r.order_type === tipoFilter) &&
-    (statusFilter === 'todos' || r.status === statusFilter)
+    (effTipo === 'todos' || r.order_type === effTipo) &&
+    (statusFilter === 'todos' || r.status === statusFilter) &&
+    (!searching || (r.order_type === 'insumos' && matchesAnyTerm(r.items?.[0]?.name || '', searchTerms)))
   )
 
   // Agrupar por shelter
@@ -294,10 +332,17 @@ function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilte
   }
   const lista = Object.values(grupos).sort((a, b) => (b.orders.length - a.orders.length))
 
-  const pag = usePaged(lista, 10, `${tipoFilter}-${statusFilter}`)
+  const pag = usePaged(lista, 10, `${effTipo}-${statusFilter}-${searchTerms.join(',')}`)
 
   if (lista.length === 0) {
-    return <div className="empty-state"><span className="icon">📋</span><p>Sin pedidos.</p></div>
+    return (
+      <div className="empty-state">
+        <span className="icon">{searching ? '🔍' : '📋'}</span>
+        <p>{searching
+          ? 'Ningún solicitante necesita esos insumos ahora mismo. Prueba con otras palabras.'
+          : 'Sin pedidos.'}</p>
+      </div>
+    )
   }
 
   return (
@@ -305,7 +350,8 @@ function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilte
       <div className="shelter-groups">
         {pag.pageItems.map((g, i) => (
           <AdminShelterRow key={i} grupo={g} statusLabel={statusLabel} providers={providers}
-            shelterObj={(shelters || []).find(s => s.id === g.shelter_id)} onChange={onChange} />
+            shelterObj={(shelters || []).find(s => s.id === g.shelter_id)} onChange={onChange}
+            searchTerms={searchTerms} />
         ))}
       </div>
       <Pagination page={pag.page} totalPages={pag.totalPages} setPage={pag.setPage} total={pag.total} />
@@ -313,9 +359,13 @@ function AdminOrdersGrouped({ rows, providers, shelters, tipoFilter, statusFilte
   )
 }
 
-function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange }) {
-  const [open, setOpen] = useState(false)
+function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange, searchTerms = [] }) {
+  const searching = searchTerms.length > 0
+  const [open, setOpen] = useState(searching)
   const toast = useToast()
+
+  // Al buscar, el padre solo pasa solicitantes con coincidencias: los abrimos.
+  useEffect(() => { if (searching) setOpen(true) }, [searching])
 
   async function compartirPedido(id) {
     const url = `${window.location.origin}/pedido/${id}`
@@ -360,7 +410,7 @@ function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange }
           <div className="sg-items">
             {grupo.orders.map(r => (
               <AdminOrderManageRow key={r.id} r={r} statusLabel={statusLabel} providers={providers}
-                onChange={onChange} onShare={() => compartirPedido(r.id)} toast={toast} />
+                onChange={onChange} onShare={() => compartirPedido(r.id)} toast={toast} terms={searchTerms} />
             ))}
           </div>
         </div>
@@ -369,7 +419,7 @@ function AdminShelterRow({ grupo, statusLabel, providers, shelterObj, onChange }
   )
 }
 
-function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toast }) {
+function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toast, terms = [] }) {
   const [editing, setEditing] = useState(false)
   const [status, setStatus] = useState(r.status)
   const [provId, setProvId] = useState(r.claimed_by || '')
@@ -412,7 +462,7 @@ function AdminOrderManageRow({ r, statusLabel, providers, onChange, onShare, toa
       <div className="sg-item-main">
         <StatusDot status={r.status} />
         <span className="sg-item-name">
-          {label}
+          {isInsumos ? <Highlight text={label} terms={terms} /> : label}
           {qty ? <span className="muted" style={{ marginLeft: 6 }}>· {qty}</span> : null}
         </span>
         <span className="sg-item-actions">
