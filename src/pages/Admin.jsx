@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, fmtDate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../components/Toast'
@@ -7,7 +8,8 @@ import { StatusDot, StatusLegend } from '../components/StatusDot'
 import { providerTypeLabel, shelterTypeLabel, PROVIDER_TYPES } from '../lib/constants'
 
 export default function Admin() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, setPreviewRole } = useAuth()
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [providers, setProviders] = useState([])
   const [shelters, setShelters] = useState([])
@@ -90,6 +92,13 @@ export default function Admin() {
   return (
     <div className="content">
       <div className="section-header"><div className="section-title">Panel de administración</div></div>
+
+      <div className="admin-preview">
+        <span className="admin-preview-label">👁️ Ver la app como:</span>
+        <button className="btn sm" onClick={() => { setPreviewRole('provider'); navigate('/') }}>Proveedor</button>
+        <button className="btn sm" onClick={() => { setPreviewRole('shelter'); navigate('/') }}>Solicitante</button>
+        <span className="muted" style={{ fontSize: 12 }}>Modo solo lectura. Podrás volver con un botón.</span>
+      </div>
 
       <div className="filter-row">
         <button className={`btn sm ${tab === 'dashboard' ? 'accent' : ''}`} onClick={() => setTab('dashboard')}>Dashboard</button>

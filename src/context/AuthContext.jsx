@@ -6,8 +6,16 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [shelter, setShelter] = useState(null)   // si el usuario es un refugio
+  const [shelter, setShelter] = useState(null)   // si el usuario es un solicitante
   const [loading, setLoading] = useState(true)
+  const [previewRole, setPreviewRoleState] = useState(() => {
+    try { return sessionStorage.getItem('panasve-preview') || null } catch { return null }
+  })
+
+  function setPreviewRole(r) {
+    setPreviewRoleState(r)
+    try { r ? sessionStorage.setItem('panasve-preview', r) : sessionStorage.removeItem('panasve-preview') } catch { /* noop */ }
+  }
 
   async function loadProfile(userId) {
     if (!userId) { setProfile(null); setShelter(null); return }
@@ -35,19 +43,28 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  const role = profile?.role || null
+  const realRole = profile?.role || null
+  // El admin puede previsualizar la app como otro rol (solo lectura)
+  const canPreview = realRole === 'admin'
+  const effectiveRole = (canPreview && previewRole) ? previewRole : realRole
+  const isPreview = canPreview && !!previewRole
 
   const value = {
     session,
     profile,
     shelter,
     loading,
-    role,
-    isAdmin: role === 'admin',
-    isProvider: role === 'provider',
-    isShelter: role === 'shelter',
+    role: effectiveRole,
+    realRole,
+    isAdmin: effectiveRole === 'admin',
+    isProvider: effectiveRole === 'provider',
+    isShelter: effectiveRole === 'shelter',
+    canPreview,
+    isPreview,
+    previewRole,
+    setPreviewRole,
     refreshProfile: () => loadProfile(session?.user?.id),
-    signOut: () => supabase.auth.signOut(),
+    signOut: () => { setPreviewRole(null); return supabase.auth.signOut() },
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

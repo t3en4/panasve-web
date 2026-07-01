@@ -14,7 +14,7 @@ const STATUS = {
 }
 
 export default function OrderCard({ order, shelter, onClaim, onDeliver, onRelease, onCancel, busy, onChanged }) {
-  const { profile, shelter: myShelter, isShelter } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isPreview } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
   const st = STATUS[order.status] || STATUS.pending
@@ -68,7 +68,7 @@ export default function OrderCard({ order, shelter, onClaim, onDeliver, onReleas
     ? `${(order.items || []).length} insumo${(order.items || []).length === 1 ? '' : 's'}`
     : `${order.people} pers. · ${(order.meals || []).join(', ')}`
 
-  const hasActions = profile && (
+  const hasActions = profile && !isPreview && (
     (!ownShelter && (order.status === 'pending' || (order.status === 'progress' && mine))) ||
     (ownShelter && order.status === 'pending')
   )

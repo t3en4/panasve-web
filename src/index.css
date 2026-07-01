@@ -737,3 +737,24 @@ table.data tr:last-child td { border-bottom: none; }
 
 /* Bandera de Venezuela en el header */
 .nav-flag { font-size: 24px; line-height: 1; display: inline-flex; align-items: center; }
+
+/* Banner de previsualización (admin viendo como otro rol) */
+.preview-banner {
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  background: var(--gold); color: #1a1400; font-size: 13.5px; font-weight: 500;
+  padding: 8px 16px; text-align: center;
+}
+.preview-banner strong { font-weight: 700; }
+.preview-banner button {
+  background: #1a1400; color: var(--gold); border: none; border-radius: 8px;
+  padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.preview-banner button:hover { opacity: 0.9; }
+
+/* Control de previsualización en el admin */
+.admin-preview {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 14px; margin-bottom: 16px;
+}
+.admin-preview-label { font-size: 13.5px; font-weight: 500; color: var(--text); }

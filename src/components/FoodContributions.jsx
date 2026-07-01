@@ -6,7 +6,7 @@ import { useToast } from './Toast'
 // Progreso de aportes de un pedido de comida.
 // Separa "comprometido" (aporte registrado) de "entregado" (delivered_at).
 export default function FoodContributions({ order, onChanged }) {
-  const { profile, isProvider } = useAuth()
+  const { profile, isProvider, isPreview } = useAuth()
   const toast = useToast()
   const [contribs, setContribs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +31,7 @@ export default function FoodContributions({ order, onChanged }) {
   const todoEntregado = cubierto && pendientesEntrega === 0
 
   async function aportar() {
+    if (isPreview) return
     const n = parseInt(amount)
     if (!n || n < 1) { toast('Indica cuántas comidas puedes aportar.', 'error'); return }
     if (n > falta) {
@@ -48,6 +49,7 @@ export default function FoodContributions({ order, onChanged }) {
   }
 
   async function marcarEntregado(id) {
+    if (isPreview) return
     setBusy(true)
     const { error } = await supabase.rpc('marcar_aporte_entregado', { p_contribution_id: id })
     setBusy(false)
@@ -58,6 +60,7 @@ export default function FoodContributions({ order, onChanged }) {
   }
 
   async function deshacer(id) {
+    if (isPreview) return
     if (!window.confirm('¿Deshacer tu aporte?')) return
     setBusy(true)
     const { error } = await supabase.rpc('deshacer_aporte', { p_contribution_id: id })
@@ -101,7 +104,7 @@ export default function FoodContributions({ order, onChanged }) {
                     ? <span className="contrib-tag entregado">entregado</span>
                     : <span className="contrib-tag pendiente">pendiente</span>}
                 </span>
-                {propio && !busy && (
+                {propio && !isPreview && !busy && (
                   <span className="contrib-row-actions">
                     {!c.delivered_at && (
                       <button className="btn xs success" onClick={() => marcarEntregado(c.id)}>Ya entregué</button>
@@ -118,7 +121,7 @@ export default function FoodContributions({ order, onChanged }) {
       )}
 
       {/* Campo para aportar (proveedores, si no está cubierto) */}
-      {isProvider && !cubierto && (
+      {isProvider && !isPreview && !cubierto && (
         <div className="contrib-form">
           <input type="number" min="1" max={falta} value={amount}
             onChange={e => setAmount(e.target.value)} placeholder={`¿Cuántas? (faltan ${falta})`} />

@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './components/Toast'
 import Nav from './components/Nav'
+import PreviewBanner from './components/PreviewBanner'
 import Feedback from './components/Feedback'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
@@ -31,6 +32,7 @@ function Shell() {
   if (loading) return <div className="loading">Cargando PanasVE…</div>
   return (
     <>
+      <PreviewBanner />
       <Nav />
       <Routes>
         <Route path="/" element={<Orders />} />

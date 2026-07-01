@@ -12,7 +12,7 @@ import CountUp from '../components/CountUp'
 import { StatusLegend } from '../components/StatusDot'
 
 export default function Orders() {
-  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin, isPreview } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -94,6 +94,7 @@ export default function Orders() {
   }
 
   async function claim(order) {
+    if (isPreview) { toast('Modo previsualización: solo lectura.', 'error'); return }
     const now = new Date().toISOString(); const prev = orders
     patchLocal(order.id, { status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
     setBusy(true)
@@ -107,6 +108,7 @@ export default function Orders() {
   }
 
   async function deliver(order) {
+    if (isPreview) { toast('Modo previsualización: solo lectura.', 'error'); return }
     const now = new Date().toISOString(); const prev = orders
     patchLocal(order.id, { status: 'done', done_at: now })
     setBusy(true)
@@ -118,6 +120,7 @@ export default function Orders() {
   }
 
   async function release(order) {
+    if (isPreview) { toast('Modo previsualización: solo lectura.', 'error'); return }
     const prev = orders
     patchLocal(order.id, { status: 'pending', claimed_by: null, claimed_by_name: null, progress_at: null })
     setBusy(true)

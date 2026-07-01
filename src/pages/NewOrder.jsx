@@ -12,7 +12,7 @@ const MAX_ITEMS = 20
 export default function NewOrder() {
   const { id } = useParams()          // si viene, estamos editando
   const editing = !!id
-  const { shelter, isShelter, loading } = useAuth()
+  const { shelter, isShelter, loading, isPreview } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
 
@@ -52,6 +52,13 @@ export default function NewOrder() {
   }, [editing, id])
 
   if (loading) return <div className="loading">Cargando…</div>
+  if (isPreview) {
+    return <div className="content"><div className="empty-state">
+      <span className="icon">👁️</span>
+      <p>Estás en modo previsualización (solo lectura). No se pueden crear pedidos.</p>
+      <button className="btn primary" style={{ marginTop: 12 }} onClick={() => navigate('/')}>Volver</button>
+    </div></div>
+  }
   if (!isShelter) {
     return <div className="content"><div className="empty-state">
       <span className="icon">🔒</span>

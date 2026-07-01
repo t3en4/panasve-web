@@ -8,7 +8,7 @@ import { StatusDot, StatusLegend } from './StatusDot'
 // una sola vez (ubicación, contacto, notas, mapa) y luego una línea por item.
 export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat, myLng,
   onClaim, onDeliver, onRelease, onCancel, busy }) {
-  const { profile, isProvider, isShelter, shelter: myShelter } = useAuth()
+  const { profile, isProvider, isShelter, shelter: myShelter, isPreview } = useAuth()
   const [open, setOpen] = useState(false)
   const [orders, setOrders] = useState(null)   // null = aún no cargado
   const [shelterObj, setShelterObj] = useState(null)
@@ -123,7 +123,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
                 <div className="sg-items">
                   {orders.map(o => (
                     <ItemLine key={o.id} order={o} shelterObj={shelterObj || {}} profile={profile}
-                      isProvider={isProvider} ownShelter={ownShelter} busy={busy}
+                      isProvider={isProvider} ownShelter={ownShelter} busy={busy} isPreview={isPreview}
                       onClaim={onClaim} onDeliver={onDeliver} onRelease={onRelease} onCancel={onCancel}
                       onChanged={recargar} />
                   ))}
@@ -138,7 +138,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
 }
 
 // Una línea por pedido/item. ⊕ expande notas/detalle puntual.
-function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy,
+function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, isPreview,
   onClaim, onDeliver, onRelease, onCancel, onChanged }) {
   const [showNotes, setShowNotes] = useState(false)
   const isInsumos = order.order_type === 'insumos'
@@ -175,16 +175,16 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy,
           )}
         </span>
         <span className="sg-item-actions">
-          {isInsumos && isProvider && order.status === 'pending' && (
+          {isInsumos && isProvider && !isPreview && order.status === 'pending' && (
             <button className="btn xs primary" disabled={busy} onClick={async () => { await onClaim(order); onChanged && onChanged() }}>Tomar</button>
           )}
-          {isInsumos && isProvider && order.status === 'progress' && mine && (
+          {isInsumos && isProvider && !isPreview && order.status === 'progress' && mine && (
             <>
               <button className="btn xs success" disabled={busy} onClick={async () => { await onDeliver(order); onChanged && onChanged() }}>Entregado</button>
               <button className="btn xs" disabled={busy} onClick={async () => { await onRelease(order); onChanged && onChanged() }}>Liberar</button>
             </>
           )}
-          {!isInsumos && isProvider && order.status !== 'done' && (
+          {!isInsumos && isProvider && !isPreview && order.status !== 'done' && (
             <button className="btn xs primary" onClick={() => setShowNotes(true)}>Aportar</button>
           )}
           <button className="btn xs" onClick={compartir} title="Copiar enlace">🔗</button>
