@@ -7,9 +7,10 @@ import { useToast } from '../components/Toast'
 import CoordsHelp from '../components/CoordsHelp'
 import OrdersMap from '../components/OrdersMap'
 import SafetyGuide from '../components/SafetyGuide'
+import RequestingCard from '../components/RequestingCard'
 
 export default function Profile() {
-  const { profile, shelter, isShelter, isProvider, refreshProfile, signOut } = useAuth()
+  const { profile, shelter, isShelter, isProvider, canRequest, refreshProfile, signOut } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
@@ -190,6 +191,9 @@ export default function Profile() {
       <div style={{ maxWidth: 620 }}>
         <SafetyGuide />
       </div>
+
+      {/* Proveedor que también puede pedir insumos (cuenta dual) */}
+      {canRequest && <RequestingCard />}
 
       {isProvider && (
         <div className="card" style={{ maxWidth: 620 }}>

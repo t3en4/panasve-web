@@ -104,6 +104,20 @@ a:hover { opacity: 0.85; }
 .tab-btn:hover { background: color-mix(in srgb, var(--nav-text) 12%, transparent); color: var(--nav-text); }
 .tab-btn.active { background: color-mix(in srgb, var(--nav-text) 18%, transparent); color: var(--nav-text); font-weight: 500; }
 
+/* Interruptor de modo (cuenta dual: Ayudar / Pedir) */
+.mode-switch {
+  display: inline-flex; padding: 3px; border-radius: 999px;
+  background: color-mix(in srgb, var(--nav-text) 12%, transparent);
+  gap: 2px; flex-shrink: 0;
+}
+.mode-seg {
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  font-size: 13px; padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+  color: color-mix(in srgb, var(--nav-text) 70%, transparent); transition: all 0.15s;
+}
+.mode-seg:hover { color: var(--nav-text); }
+.mode-seg.active { background: var(--nav-text); color: var(--nav-bg, #14211b); font-weight: 600; }
+
 /* Navbar responsive: menú hamburguesa en móvil */
 @media (max-width: 720px) {
   .nav { flex-wrap: wrap; }
@@ -116,6 +130,8 @@ a:hover { opacity: 0.85; }
   .nav-menu.open { max-height: 420px; margin-top: 14px; }
   .nav-tabs { flex-direction: column; gap: 2px; }
   .nav-tabs .tab-btn { width: 100%; justify-content: flex-start; padding: 11px 12px; font-size: 15px; }
+  .mode-switch { width: 100%; justify-content: stretch; }
+  .mode-switch .mode-seg { flex: 1; text-align: center; padding: 9px 12px; font-size: 14px; }
   .nav-right { flex-direction: column; align-items: stretch; gap: 10px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--nav-text) 14%, transparent); }
   .nav-right .profile-badge { justify-content: flex-start; padding: 4px 0; }
   .nav-right .btn { width: 100%; justify-content: center; }
@@ -712,6 +728,16 @@ mark.hl {
   background: var(--gold-bg); color: var(--gold);
   padding: 0 2px; border-radius: 4px; font-weight: 600;
 }
+
+/* Etiqueta "Tu solicitud" en la vista del proveedor dual */
+.sg-own-tag {
+  display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600;
+  padding: 1px 8px; border-radius: 999px; vertical-align: middle;
+  background: var(--gold-bg); color: var(--gold);
+}
+
+/* Tarjeta de activación del modo Pedir (proveedor dual) */
+.requesting-card { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
 
 /* Botón extra pequeño para las líneas de item */
 .btn.xs { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }

@@ -12,7 +12,7 @@ import CountUp from '../components/CountUp'
 import { StatusLegend } from '../components/StatusDot'
 
 export default function Orders() {
-  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin, isPreview } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin, isPreview, ownedShelterId } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -116,6 +116,9 @@ export default function Orders() {
 
   async function claim(order) {
     if (isPreview) { toast('Modo previsualización: solo lectura.', 'error'); return }
+    if (ownedShelterId && order.shelter_id === ownedShelterId) {
+      toast('Este es tu propio pedido. Cambia a "Pedir" para gestionarlo.', 'error'); return
+    }
     const now = new Date().toISOString(); const prev = orders
     patchLocal(order.id, { status: 'progress', claimed_by: profile.id, claimed_by_name: profile.name, progress_at: now })
     setBusy(true)
@@ -534,6 +537,7 @@ export default function Orders() {
                   {pagGrupos.pageItems.map(r => (
                     <ShelterGroup key={r.shelter_id} resumen={r} tipoFilter={effTipo} statusFilter={filter}
                       searchTerms={searchTerms}
+                      isOwn={ownedShelterId != null && r.shelter_id === ownedShelterId}
                       myLat={profile?.lat} myLng={profile?.lng}
                       onClaim={claim} onDeliver={deliver} onRelease={release} onCancel={cancel} busy={busy} />
                   ))}

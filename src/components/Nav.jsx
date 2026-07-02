@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import ThemeToggle from './ThemeToggle'
 
 export default function Nav() {
-  const { profile, isAdmin, isShelter, signOut } = useAuth()
+  const { profile, isAdmin, isShelter, isDual, activeMode, setActiveMode, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
 
@@ -33,6 +33,14 @@ export default function Nav() {
 
       {/* Menú: fila en desktop, desplegable en móvil */}
       <div className={`nav-menu ${open ? 'open' : ''}`}>
+        {isDual && (
+          <div className="mode-switch" role="group" aria-label="Cambiar modo">
+            <button className={`mode-seg ${activeMode === 'provider' ? 'active' : ''}`}
+              onClick={() => { setActiveMode('provider'); close(); navigate('/') }}>🤝 Ayudar</button>
+            <button className={`mode-seg ${activeMode === 'shelter' ? 'active' : ''}`}
+              onClick={() => { setActiveMode('shelter'); close(); navigate('/') }}>🙏 Pedir</button>
+          </div>
+        )}
         <div className="nav-tabs">
           <NavLink to="/" end className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`} onClick={close}>
             {isShelter ? 'Mis pedidos' : 'Pedidos'}

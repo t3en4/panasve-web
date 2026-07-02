@@ -9,7 +9,7 @@ import { StatusDot, StatusLegend } from './StatusDot'
 // Tarjeta colapsable de un refugio. Al expandir muestra la info compartida
 // una sola vez (ubicación, contacto, notas, mapa) y luego una línea por item.
 export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat, myLng,
-  searchTerms = [], onClaim, onDeliver, onRelease, onCancel, busy }) {
+  searchTerms = [], isOwn = false, onClaim, onDeliver, onRelease, onCancel, busy }) {
   const { profile, isProvider, isShelter, shelter: myShelter, isPreview } = useAuth()
   const [open, setOpen] = useState(false)
   const [orders, setOrders] = useState(null)   // null = aún no cargado
@@ -102,7 +102,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
       <button className="shelter-group-head" onClick={toggle}>
         <span className="shelter-group-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
         <span className="shelter-group-info">
-          <span className="shelter-group-name">{resumen.name}</span>
+          <span className="shelter-group-name">{resumen.name}{isOwn && <span className="sg-own-tag">Tu solicitud</span>}</span>
           <span className="shelter-group-meta">
             {resumen.estado || 's/e'}
             {dist != null && ` · ${dist.toFixed(1)} km`}
@@ -141,7 +141,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
                   {displayOrders.map(o => (
                     <ItemLine key={o.id} order={o} shelterObj={shelterObj || {}} profile={profile}
                       isProvider={isProvider} ownShelter={ownShelter} busy={busy} isPreview={isPreview}
-                      terms={searchTerms}
+                      terms={searchTerms} isOwn={isOwn}
                       onClaim={onClaim} onDeliver={onDeliver} onRelease={onRelease} onCancel={onCancel}
                       onChanged={recargar} />
                   ))}
@@ -157,7 +157,7 @@ export default function ShelterGroup({ resumen, tipoFilter, statusFilter, myLat,
 
 // Una línea por pedido/item. ⊕ expande notas/detalle puntual.
 function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, isPreview,
-  terms = [], onClaim, onDeliver, onRelease, onCancel, onChanged }) {
+  terms = [], isOwn = false, onClaim, onDeliver, onRelease, onCancel, onChanged }) {
   const [showNotes, setShowNotes] = useState(false)
   const isInsumos = order.order_type === 'insumos'
   const esVol = order.order_type === 'voluntarios'
@@ -196,16 +196,16 @@ function ItemLine({ order, shelterObj, profile, isProvider, ownShelter, busy, is
           )}
         </span>
         <span className="sg-item-actions">
-          {isInsumos && isProvider && !isPreview && order.status === 'pending' && (
+          {isInsumos && isProvider && !isPreview && !isOwn && order.status === 'pending' && (
             <button className="btn xs primary" disabled={busy} onClick={async () => { await onClaim(order); onChanged && onChanged() }}>Tomar</button>
           )}
-          {isInsumos && isProvider && !isPreview && order.status === 'progress' && mine && (
+          {isInsumos && isProvider && !isPreview && !isOwn && order.status === 'progress' && mine && (
             <>
               <button className="btn xs success" disabled={busy} onClick={async () => { await onDeliver(order); onChanged && onChanged() }}>Entregado</button>
               <button className="btn xs" disabled={busy} onClick={async () => { await onRelease(order); onChanged && onChanged() }}>Liberar</button>
             </>
           )}
-          {!isInsumos && isProvider && !isPreview && order.status !== 'done' && (
+          {!isInsumos && isProvider && !isPreview && !isOwn && order.status !== 'done' && (
             <button className="btn xs primary" onClick={() => setShowNotes(true)}>Aportar</button>
           )}
           <button className="btn xs" onClick={compartir} title="Copiar enlace">🔗</button>

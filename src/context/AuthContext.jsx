@@ -19,6 +19,15 @@ export function AuthProvider({ children }) {
   const [previewProfile, setPreviewProfile] = useState(null)
   const [previewShelter, setPreviewShelter] = useState(null)
 
+  // Modo activo para cuentas duales (proveedor que también pide): 'provider' | 'shelter'
+  const [activeMode, setActiveModeState] = useState(() => {
+    try { return localStorage.getItem('panasve-mode') || 'provider' } catch { return 'provider' }
+  })
+  function setActiveMode(m) {
+    setActiveModeState(m)
+    try { m ? localStorage.setItem('panasve-mode', m) : localStorage.removeItem('panasve-mode') } catch { /* noop */ }
+  }
+
   function setPreviewRole(r) {
     setPreviewRoleState(r)
     setPreviewUserIdState(null); setPreviewProfile(null); setPreviewShelter(null)
@@ -44,12 +53,10 @@ export function AuthProvider({ children }) {
     if (!userId) { setProfile(null); setShelter(null); return }
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single()
     setProfile(prof || null)
-    if (prof?.role === 'shelter') {
-      const { data: sh } = await supabase.from('shelters').select('*').eq('owner_id', userId).maybeSingle()
-      setShelter(sh || null)
-    } else {
-      setShelter(null)
-    }
+    // Cargar el registro de solicitante si la cuenta posee uno.
+    // Aplica a refugios y a proveedores "duales" (que también piden insumos).
+    const { data: sh } = await supabase.from('shelters').select('*').eq('owner_id', userId).maybeSingle()
+    setShelter(sh || null)
   }
 
   useEffect(() => {
@@ -89,11 +96,17 @@ export function AuthProvider({ children }) {
   const impersonating = canPreview && !!previewUserId && !!previewProfile
   const isPreview = canPreview && (!!previewRole || !!previewUserId)
 
+  // Cuenta dual: proveedor que además posee un registro de solicitante propio.
+  const hasShelter = !!shelter
+  const isDual = realRole === 'provider' && hasShelter
+  // Rol efectivo propio (sin impersonación): si es dual, manda el modo activo.
+  const selfEffectiveRole = isDual ? activeMode : realRole
+
   const effectiveProfile = impersonating ? previewProfile : profile
   const effectiveShelter = impersonating ? previewShelter : shelter
   const effectiveRole = impersonating ? previewProfile?.role
     : (canPreview && previewRole) ? previewRole
-    : realRole
+    : selfEffectiveRole
 
   const value = {
     session,
@@ -107,6 +120,13 @@ export function AuthProvider({ children }) {
     isShelter: effectiveRole === 'shelter',
     canPreview,
     isPreview,
+    // Cuenta dual (proveedor que también pide insumos)
+    isDual,
+    hasShelter,
+    canRequest: realRole === 'provider',   // un proveedor puede activar el modo Pedir
+    activeMode: isDual ? activeMode : null,
+    setActiveMode,
+    ownedShelterId: shelter?.id || null,    // registro de solicitante propio (para evitar auto-tomas)
     previewRole,
     previewUserId,
     previewName: impersonating ? (previewProfile?.name || previewProfile?.email) : null,
