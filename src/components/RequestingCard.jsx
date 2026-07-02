@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { SHELTER_TYPES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
@@ -12,9 +12,20 @@ export default function RequestingCard() {
   const { profile, hasShelter, setActiveMode, refreshProfile } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const cardRef = useRef(null)
   const [openForm, setOpenForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [f, setF] = useState({ location: '', phone: '', contact: '', contact_recv: '', shelter_type: 'organizacion' })
+
+  // Si llegan desde el aviso de la vista de pedidos (?activar=1), abrir el
+  // formulario y traer la tarjeta a la vista.
+  useEffect(() => {
+    if (params.get('activar') === '1' && !hasShelter) {
+      setOpenForm(true)
+      setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+    }
+  }, [params, hasShelter])
 
   useEffect(() => {
     if (!profile) return
@@ -59,7 +70,7 @@ export default function RequestingCard() {
   // Ya es dual: solo un recordatorio + acceso rápido
   if (hasShelter) {
     return (
-      <div className="card requesting-card" style={{ maxWidth: 620 }}>
+      <div className="card requesting-card" ref={cardRef} style={{ maxWidth: 620 }}>
         <div className="card-title" style={{ marginBottom: 4 }}>También puedes pedir insumos</div>
         <div className="card-sub" style={{ marginBottom: 14 }}>
           Tu cuenta también está registrada como solicitante. Cambia entre <strong>Ayudar</strong> y
@@ -73,7 +84,7 @@ export default function RequestingCard() {
   }
 
   return (
-    <div className="card requesting-card" style={{ maxWidth: 620 }}>
+    <div className="card requesting-card" ref={cardRef} style={{ maxWidth: 620 }}>
       <div className="card-title" style={{ marginBottom: 4 }}>¿Tú también necesitas insumos?</div>
       <div className="card-sub" style={{ marginBottom: 14 }}>
         Si cocinas o ayudas a otros pero necesitas insumos para hacerlo, puedes activar el modo

@@ -12,7 +12,7 @@ import CountUp from '../components/CountUp'
 import { StatusLegend } from '../components/StatusDot'
 
 export default function Orders() {
-  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin, isPreview, ownedShelterId } = useAuth()
+  const { profile, shelter: myShelter, isShelter, isProvider, isAdmin, isPreview, ownedShelterId, canRequest, hasShelter } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -31,6 +31,14 @@ export default function Orders() {
   const [misStatus, setMisStatus] = useState('all')     // all | progress | done
   const [counts, setCounts] = useState({ shelters: 0, providers: 0 })
   const [busy, setBusy] = useState(false)
+  // Aviso a proveedores de que también pueden pedir insumos (descartable)
+  const [hideRequestNudge, setHideRequestNudge] = useState(() => {
+    try { return localStorage.getItem('panasve-hide-request-nudge') === '1' } catch { return false }
+  })
+  function dismissRequestNudge() {
+    setHideRequestNudge(true)
+    try { localStorage.setItem('panasve-hide-request-nudge', '1') } catch { /* noop */ }
+  }
 
   // El admin gestiona todo desde /admin; la página principal le es redundante.
   useEffect(() => {
@@ -435,6 +443,21 @@ export default function Orders() {
               </>
             )}
           </div>
+
+          {/* Aviso: los proveedores también pueden pedir insumos (solo si aún no lo activan) */}
+          {isProvider && canRequest && !hasShelter && !hideRequestNudge && (
+            <div className="request-nudge">
+              <span className="request-nudge-icon" aria-hidden="true">🍳</span>
+              <div className="request-nudge-text">
+                <strong>¿Tú también necesitas insumos para cocinar o ayudar?</strong>
+                <span>Con esta misma cuenta puedes pedirlos. Se activa en un momento.</span>
+              </div>
+              <div className="request-nudge-actions">
+                <button className="btn sm primary" onClick={() => navigate('/perfil?activar=1')}>Activar</button>
+                <button className="request-nudge-close" aria-label="Ocultar aviso" onClick={dismissRequestNudge}>×</button>
+              </div>
+            </div>
+          )}
 
           {view === 'mios' ? (
             <>

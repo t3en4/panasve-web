@@ -739,6 +739,28 @@ mark.hl {
 /* Tarjeta de activación del modo Pedir (proveedor dual) */
 .requesting-card { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
 
+/* Aviso en la vista de pedidos: "también puedes pedir insumos" */
+.request-nudge {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px;
+}
+.request-nudge-icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.request-nudge-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.request-nudge-text strong { font-size: 14.5px; color: var(--text); }
+.request-nudge-text span { font-size: 13px; color: var(--text-secondary); }
+.request-nudge-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.request-nudge-close {
+  border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+  font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 6px;
+}
+.request-nudge-close:hover { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
+@media (max-width: 560px) {
+  .request-nudge { flex-wrap: wrap; }
+  .request-nudge-text { flex-basis: calc(100% - 40px); }
+  .request-nudge-actions { flex-basis: 100%; justify-content: flex-end; }
+}
+
 /* Botón extra pequeño para las líneas de item */
 .btn.xs { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
 .btn.xs.sg-expand { padding: 4px 9px; font-weight: 600; }
